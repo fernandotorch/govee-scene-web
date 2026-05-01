@@ -146,35 +146,45 @@ def _club_loop():
 
 def _flicker_loop(r, g, b):
     """
-    Failing fluorescent: stable white base, then random burst events of rapid on/off.
-    Stable periods last 2-8s. Each burst has 3-7 rapid cuts, with occasional
-    longer pauses mid-burst so the tube seems to struggle before recovering.
+    Two bars flicker independently via per-segment threads — never in sync.
+    Stable white base; random burst events with cuts up to 500ms.
+    Each bar has its own timing so one can be mid-burst while the other is stable.
     """
     _on()
-    _color(r, g, b)
-    _bright(100)
-    while not _stop.is_set():
-        # Stable — lights on, wait for next burst
-        _stop.wait(random.uniform(2.0, 8.0))
-        if _stop.is_set():
-            break
+    _seg_colors([(r, g, b, LEFT_MASK), (r, g, b, RIGHT_MASK)])
 
-        # Flicker burst
-        for _ in range(random.randint(3, 7)):
-            _bright(1)                                  # cut
-            _stop.wait(random.uniform(0.02, 0.07))
-            _bright(random.randint(75, 100))            # recover
-            _stop.wait(random.uniform(0.03, 0.09))
-            # Occasional longer struggle — tube can't quite hold on
-            if random.random() < 0.25:
-                _bright(1)
-                _stop.wait(random.uniform(0.12, 0.45))
-                _bright(random.randint(80, 100))
-                _stop.wait(random.uniform(0.03, 0.07))
+    def bar_loop(mask):
+        while not _stop.is_set():
+            # Stable — this bar on, waiting for next burst
+            _seg_colors([(r, g, b, mask)])
+            _stop.wait(random.uniform(1.0, 5.0))
+            if _stop.is_set():
+                break
 
-        # Settle back to stable
-        _color(r, g, b)
-        _bright(100)
+            # Flicker burst — several cuts in a row
+            for _ in range(random.randint(3, 8)):
+                _seg_colors([(2, 2, 2, mask)])                  # cut (nearly off)
+                _stop.wait(random.uniform(0.08, 0.50))          # up to 500ms dark
+                if _stop.is_set():
+                    break
+                _seg_colors([(r, g, b, mask)])                  # recover
+                _stop.wait(random.uniform(0.04, 0.15))
+                # Occasional long struggle — tube can't hold on
+                if random.random() < 0.30:
+                    _seg_colors([(2, 2, 2, mask)])
+                    _stop.wait(random.uniform(0.20, 0.50))
+                    _seg_colors([(r, g, b, mask)])
+                    _stop.wait(random.uniform(0.05, 0.12))
+
+            _seg_colors([(r, g, b, mask)])                      # settle
+
+    left  = threading.Thread(target=bar_loop, args=(LEFT_MASK,),  daemon=True)
+    right = threading.Thread(target=bar_loop, args=(RIGHT_MASK,), daemon=True)
+    left.start()
+    right.start()
+    _stop.wait()
+    left.join(timeout=1)
+    right.join(timeout=1)
 
 def _alarm_loop():
     """
