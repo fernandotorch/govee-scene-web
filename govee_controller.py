@@ -155,26 +155,23 @@ def _flicker_loop(r, g, b):
 
     def bar_loop(mask):
         while not _stop.is_set():
-            # Stable — this bar on, waiting for next burst
+            # Stable — lights on, 3-5s before next burst
             _seg_colors([(r, g, b, mask)])
-            _stop.wait(random.uniform(1.0, 5.0))
+            _stop.wait(random.uniform(3.0, 5.0))
             if _stop.is_set():
                 break
 
-            # Flicker burst — several cuts in a row
-            for _ in range(random.randint(3, 8)):
-                _seg_colors([(2, 2, 2, mask)])                  # cut (nearly off)
-                _stop.wait(random.uniform(0.08, 0.50))          # up to 500ms dark
+            # Flicker burst — total dark time 500ms–2s spread across cuts
+            remaining = random.uniform(0.5, 2.0)
+            while remaining > 0 and not _stop.is_set():
+                cut = min(remaining, random.uniform(0.08, 0.50))
+                _seg_colors([(2, 2, 2, mask)])                  # cut
+                _stop.wait(cut)
+                remaining -= cut
                 if _stop.is_set():
                     break
-                _seg_colors([(r, g, b, mask)])                  # recover
-                _stop.wait(random.uniform(0.04, 0.15))
-                # Occasional long struggle — tube can't hold on
-                if random.random() < 0.30:
-                    _seg_colors([(2, 2, 2, mask)])
-                    _stop.wait(random.uniform(0.20, 0.50))
-                    _seg_colors([(r, g, b, mask)])
-                    _stop.wait(random.uniform(0.05, 0.12))
+                _seg_colors([(r, g, b, mask)])                  # brief recover
+                _stop.wait(random.uniform(0.04, 0.12))
 
             _seg_colors([(r, g, b, mask)])                      # settle
 
