@@ -147,33 +147,33 @@ def _club_loop():
 def _flicker_loop(r, g, b):
     """
     Two bars flicker independently via per-segment threads — never in sync.
-    Stable white base; random burst events with cuts up to 500ms.
-    Each bar has its own timing so one can be mid-burst while the other is stable.
+    Long stable phase (5-10s), then a build-up: one long cut (~0.7-1s) followed
+    by progressively shorter cuts accelerating until the light settles back on.
     """
     _on()
     _seg_colors([(r, g, b, LEFT_MASK), (r, g, b, RIGHT_MASK)])
 
     def bar_loop(mask):
         while not _stop.is_set():
-            # Stable — lights on, 3-5s before next burst
             _seg_colors([(r, g, b, mask)])
-            _stop.wait(random.uniform(3.0, 5.0))
+            _stop.wait(random.uniform(5.0, 10.0))
             if _stop.is_set():
                 break
 
-            # Flicker burst — total dark time 500ms–2s spread across cuts
-            remaining = random.uniform(0.5, 2.0)
-            while remaining > 0 and not _stop.is_set():
-                cut = min(remaining, random.uniform(0.08, 0.50))
-                _seg_colors([(2, 2, 2, mask)])                  # cut
+            # Build-up: starts with a long cut, each successive cut shorter
+            # and more frequent, until it settles (~4-5 cycles down to ~50ms)
+            cut = random.uniform(0.6, 1.0)
+            while cut > 0.05 and not _stop.is_set():
+                _seg_colors([(2, 2, 2, mask)])
                 _stop.wait(cut)
-                remaining -= cut
                 if _stop.is_set():
                     break
-                _seg_colors([(r, g, b, mask)])                  # brief recover
-                _stop.wait(random.uniform(0.04, 0.12))
+                _seg_colors([(r, g, b, mask)])
+                _stop.wait(cut * random.uniform(0.2, 0.4))
+                cut *= random.uniform(0.35, 0.55)
 
-            _seg_colors([(r, g, b, mask)])                      # settle
+            if not _stop.is_set():
+                _seg_colors([(r, g, b, mask)])                  # settle
 
     left  = threading.Thread(target=bar_loop, args=(LEFT_MASK,),  daemon=True)
     right = threading.Thread(target=bar_loop, args=(RIGHT_MASK,), daemon=True)
