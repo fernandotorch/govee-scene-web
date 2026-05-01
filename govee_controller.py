@@ -121,28 +121,42 @@ def _police_loop():
 
 def _club_loop():
     """
-    Techno club: hot pink + neon green base, occasional purple/cyan/white.
-    Irregular timing so it breathes rather than ticks.
+    Cyberpunk techno club: bars swap pink/green each beat (120 BPM).
+    Kick (beats 1,3): brightness punches to 100, decays to 60 — sustained thump.
+    Snare (beats 2,4): snaps to 100, drops fast then recovers to 70 — crisp snap.
+    Random mid-beat swaps keep it dynamic and prevent freezing.
     """
-    palette = [
-        (255, 0, 140),   # hot pink
-        (255, 0, 140),   # hot pink (weighted heavier)
-        (0, 255, 100),   # neon green
-        (0, 255, 100),   # neon green (weighted heavier)
-        (160, 0, 255),   # purple accent
-        (0, 200, 255),   # cyan accent
-    ]
+    PINK   = (255, 0, 180)
+    GREEN  = (0, 255, 80)
+    BEAT_S = 0.5   # 120 BPM
+
     _on()
+
+    beat        = 0
+    beat_start  = time.time()
+    left, right = PINK, GREEN
+    _seg_colors([(*left, LEFT_MASK), (*right, RIGHT_MASK)])
+
     while not _stop.is_set():
-        r, g, b = random.choice(palette)
-        _color(r, g, b)
-        _bright(random.randint(55, 100))
-        _stop.wait(random.uniform(0.06, 0.28))
-        # Rare white flash — bass drop moment
-        if random.random() < 0.07:
-            _color(255, 255, 255)
-            _bright(100)
-            _stop.wait(0.04)
+        now = time.time()
+        t   = (now - beat_start) / BEAT_S
+
+        if t >= 1.0:
+            beat        = (beat + 1) % 4
+            beat_start  = now
+            t           = 0.0
+            left, right = right, left
+            _seg_colors([(*left, LEFT_MASK), (*right, RIGHT_MASK)])
+
+        # Kick: punch to 100, settle to 60
+        # Snare: snap to 100, drop fast, recover to 70
+        if beat % 2 == 0:
+            brightness = int(60 + 40 * math.exp(-t * 4))
+        else:
+            brightness = int(70 + 30 * math.exp(-t * 12))
+
+        _bright(brightness)
+        _stop.wait(0.02)
 
 def _flicker_loop(r, g, b):
     """
