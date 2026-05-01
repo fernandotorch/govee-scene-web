@@ -27,6 +27,7 @@ LISTEN_PORT    = 4002
 CONTROL_PORT   = 4003
 
 _device_ip = None
+_sock      = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def discover() -> str | None:
     recv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -49,11 +50,15 @@ def discover() -> str | None:
         send.close()
 
 def _send(cmd: dict):
+    global _sock
     if not _device_ip:
         return
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(json.dumps({"msg": cmd}).encode(), (_device_ip, CONTROL_PORT))
-    sock.close()
+    msg = json.dumps({"msg": cmd}).encode()
+    try:
+        _sock.sendto(msg, (_device_ip, CONTROL_PORT))
+    except OSError:
+        _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        _sock.sendto(msg, (_device_ip, CONTROL_PORT))
 
 # ── Primitives ────────────────────────────────────────────────────────────────
 
@@ -121,42 +126,35 @@ def _police_loop():
 
 def _club_loop():
     """
-    Cyberpunk techno club: bars swap pink/green each beat (120 BPM).
-    Kick (beats 1,3): brightness punches to 100, decays to 60 — sustained thump.
-    Snare (beats 2,4): snaps to 100, drops fast then recovers to 70 — crisp snap.
-    Random mid-beat swaps keep it dynamic and prevent freezing.
+    Techno club: disian-style sine-wave brightness pulse with rapid pink/green swaps.
+    Phase is wall-clock driven so any scheduling delay doesn't corrupt the animation.
+    ptReal sent at 150ms ticks (~6.7 Hz) — conservative enough to avoid BLE overflow.
     """
-    PINK   = (255, 0, 180)
-    GREEN  = (0, 255, 80)
-    BEAT_S = 0.5   # 120 BPM
+    PINK     = (255, 0, 180)
+    GREEN    = (0, 255, 80)
+    COLORS   = [PINK, GREEN]
+    PULSE_HZ = 2.0   # brightness oscillations/sec — 120 BPM feel
+    TICK     = 0.15  # color swap + send interval
 
     _on()
 
-    beat        = 0
-    beat_start  = time.time()
-    left, right = PINK, GREEN
-    _seg_colors([(*left, LEFT_MASK), (*right, RIGHT_MASK)])
+    t0      = time.time()
+    l_color = PINK
+    r_color = GREEN
 
     while not _stop.is_set():
         now = time.time()
-        t   = (now - beat_start) / BEAT_S
 
-        if t >= 1.0:
-            beat        = (beat + 1) % 4
-            beat_start  = now
-            t           = 0.0
-            left, right = right, left
-            _seg_colors([(*left, LEFT_MASK), (*right, RIGHT_MASK)])
+        l_color = random.choice(COLORS)
+        r_color = PINK if l_color is GREEN else GREEN
 
-        # Kick: punch to 100, settle to 60
-        # Snare: snap to 100, drop fast, recover to 70
-        if beat % 2 == 0:
-            brightness = int(60 + 40 * math.exp(-t * 4))
-        else:
-            brightness = int(70 + 30 * math.exp(-t * 12))
+        v     = (math.sin(2 * math.pi * PULSE_HZ * (now - t0)) + 1) / 2
+        scale = 0.55 + 0.45 * v
 
-        _bright(brightness)
-        _stop.wait(0.02)
+        ls = tuple(round(c * scale) for c in l_color)
+        rs = tuple(round(c * scale) for c in r_color)
+        _seg_colors([(*ls, LEFT_MASK), (*rs, RIGHT_MASK)])
+        _stop.wait(TICK)
 
 def _flicker_loop(r, g, b):
     """
