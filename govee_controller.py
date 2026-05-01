@@ -146,16 +146,35 @@ def _club_loop():
 
 def _flicker_loop(r, g, b):
     """
-    Organic flicker — damaged fluorescent or dying power conduit.
-    Random on/off timing with variable brightness so no two cycles look alike.
+    Failing fluorescent: stable white base, then random burst events of rapid on/off.
+    Stable periods last 2-8s. Each burst has 3-7 rapid cuts, with occasional
+    longer pauses mid-burst so the tube seems to struggle before recovering.
     """
     _on()
+    _color(r, g, b)
+    _bright(100)
     while not _stop.is_set():
-        _bright(random.randint(25, 100))
+        # Stable — lights on, wait for next burst
+        _stop.wait(random.uniform(2.0, 8.0))
+        if _stop.is_set():
+            break
+
+        # Flicker burst
+        for _ in range(random.randint(3, 7)):
+            _bright(1)                                  # cut
+            _stop.wait(random.uniform(0.02, 0.07))
+            _bright(random.randint(75, 100))            # recover
+            _stop.wait(random.uniform(0.03, 0.09))
+            # Occasional longer struggle — tube can't quite hold on
+            if random.random() < 0.25:
+                _bright(1)
+                _stop.wait(random.uniform(0.12, 0.45))
+                _bright(random.randint(80, 100))
+                _stop.wait(random.uniform(0.03, 0.07))
+
+        # Settle back to stable
         _color(r, g, b)
-        _stop.wait(random.uniform(0.04, 0.20))
-        _bright(random.randint(5, 18))
-        _stop.wait(random.uniform(0.01, 0.07))
+        _bright(100)
 
 def _alarm_loop():
     """
