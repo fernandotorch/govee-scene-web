@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Govee</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #0e0e0e;
+    color: #eee;
+    font-family: -apple-system, sans-serif;
+    padding: 24px 16px;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1em; color: #666; margin: 0 0 24px; letter-spacing: 0.05em; }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 24px 16px;
+    margin: 10px 0;
+    font-size: 1.05em;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: opacity 0.1s;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn small { display: block; font-weight: 400; font-size: 0.8em; opacity: 0.7; margin-top: 2px; }
+  .off     { background: #2a2a2a; color: #aaa; }
+  .police  { background: linear-gradient(120deg, #cc0000 0%, #0033dd 100%); color: #fff; }
+  .club    { background: linear-gradient(120deg, #cc006e 0%, #00cc66 100%); color: #fff; }
+  .flicker { background: #3a3020; color: #d4c080; }
+  .alarm   { background: #7a2800; color: #ffaa44; }
+  .disian  { background: linear-gradient(120deg, #1a0033 0%, #330055 100%); color: #ccaaff; }
+  #status  { margin-top: 24px; font-size: 0.8em; color: #555; text-align: center; }
+</style>
+</head>
+<body>
+<h1>SESSION LIGHTING</h1>
+
+<button class="btn off" onclick="scene('off')">
+  Off
+  <small>Kill all effects</small>
+</button>
+
+<button class="btn police" onclick="scene('police')">
+  Police Siren
+  <small>Red / blue emergency lights</small>
+</button>
+
+<button class="btn club" onclick="scene('club')">
+  Techno Club
+  <small>Hot pink &amp; neon green strobe</small>
+</button>
+
+<button class="btn flicker" onclick="scene('flicker')">
+  Flickering Light
+  <small>Damaged fluorescent — space station</small>
+</button>
+
+<button class="btn alarm" onclick="scene('alarm')">
+  Emergency Alarm
+  <small>Orange rotating beacon</small>
+</button>
+
+<button class="btn disian" onclick="scene('disian')">
+  Disian Encounter
+  <small>Deep purple pulse, cold intrusions</small>
+</button>
+
+<div id="status">—</div>
+
+<script>
+function scene(name) {
+  fetch('/scene/' + name, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('status').textContent = 'Active: ' + d.scene;
+    });
+}
+</script>
+</body>
+</html>

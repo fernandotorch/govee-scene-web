@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio</title>
+<style>
+  :root { --bg: #0e0e0e; --panel: #1a1a1a; --border: #333; --accent: #63B8DE; --text: #eee; }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  #top-bar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 12px; }
+  #main-layout { flex: 1; display: flex; overflow: hidden; }
+
+  .panel { border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .panel-header { padding: 12px; border-bottom: 1px solid var(--border); background: var(--panel); display: flex; justify-content: space-between; align-items: center; }
+  .panel-content { flex: 1; overflow-y: auto; padding: 16px; }
+
+  #arc-panel { width: 240px; }
+  #editor-panel { flex: 1; }
+  #light-panel { width: 240px; }
+  #sound-panel { width: 240px; border-right: none; }
+
+  /* Arc scene cards */
+  .item { background: var(--panel); padding: 10px; margin-bottom: 6px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; }
+  .item:hover { border-color: var(--accent); }
+  .item.active { border-color: var(--accent); background: #252525; }
+  .item.dragging { opacity: 0.4; }
+  .item.drag-over { border-color: var(--accent); border-style: dashed; }
+
+  /* Editor field layout */
+  .field-label { font-size: 0.7em; text-transform: uppercase; color: #666; letter-spacing: 1px; margin: 14px 0 4px; }
+  .field-label:first-child { margin-top: 0; }
+  hr.divider { border: none; border-top: 1px solid #222; margin: 18px 0; }
+  .section-title { font-size: 0.72em; text-transform: uppercase; color: #555; letter-spacing: 1.5px; margin: 0 0 10px; }
+
+  /* Sound drop zone */
+  .sound-zone { padding: 9px 12px; border-radius: 4px; border: 1px dashed #333; color: #555; font-size: 0.85em; display: flex; align-items: center; justify-content: space-between; min-height: 36px; margin-bottom: 6px; }
+  .sound-zone.has-sound { color: #ccc; border-color: #444; border-style: solid; }
+  .sound-zone.drop-active { border-color: var(--accent); border-style: dashed; background: #051a2a; color: var(--accent); }
+
+  /* Trigger cards */
+  .trigger-card { background: #1e1e1e; padding: 10px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #2a2a2a; }
+  .trigger-card.sound-target { border-color: var(--accent); }
+  .trigger-card.drop-active { border-color: var(--accent); background: #051a2a; }
+  .trigger-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+  .row-label { font-size: 0.7em; text-transform: uppercase; color: #555; letter-spacing: 1px; flex-shrink: 0; width: 36px; }
+
+  /* SFX explorer */
+  .sfx-dir { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 0.88em; color: var(--accent); font-weight: 600; }
+  .sfx-dir:hover { background: #222; }
+  .sfx-file { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 4px; cursor: grab; font-size: 0.84em; color: #aaa; user-select: none; }
+  .sfx-file:hover { background: #1e1e1e; color: var(--text); }
+  .sfx-file.dragging-file { opacity: 0.45; }
+
+  /* Library tabs */
+  .lib-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .lib-tab { flex: 1; padding: 9px 8px; background: none; border: none; border-bottom: 2px solid transparent; color: #666; cursor: pointer; font-size: 0.75em; letter-spacing: 1px; text-transform: uppercase; font-weight: bold; }
+  .lib-tab:hover { color: #999; }
+  .lib-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Effect cards */
+  .effect-card { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 4px; cursor: grab; font-size: 0.88em; color: #aaa; user-select: none; }
+  .effect-card:hover { background: #1e1e1e; color: var(--text); }
+  .effect-card.active { background: #0a1a2a; color: var(--accent); }
+  .effect-card.active .effect-dot { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .effect-card.dragging-file { opacity: 0.45; }
+  .effect-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Light effect drop zone (wraps the select in the editor) */
+  .light-drop-zone { border-radius: 4px; border: 1px solid var(--border); background: #222; margin-bottom: 0; }
+  .light-drop-zone.drop-active { border-color: var(--accent); border-style: dashed; background: #051a2a; }
+
+  .breadcrumb { font-size: 0.78em; color: #666; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 2px; }
+  .breadcrumb span { cursor: pointer; }
+  .breadcrumb span:hover { color: var(--text); text-decoration: underline; }
+
+  .path-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .path-text { font-size: 10px; color: #555; word-break: break-all; flex: 1; }
+
+  /* Shared inputs */
+  h2 { margin: 0; font-size: 0.8em; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+  input[type="text"], input[type="number"], select { background: #222; color: var(--text); border: 1px solid var(--border); padding: 7px 9px; border-radius: 4px; width: 100%; margin-bottom: 0; font-size: 0.9em; }
+  input[type="range"] { width: 100%; margin: 0; padding: 3px 0; accent-color: var(--accent); }
+  button { cursor: pointer; background: var(--accent); color: black; font-weight: bold; border: none; padding: 8px 12px; border-radius: 4px; width: 100%; font-size: 0.88em; }
+  button:hover { opacity: 0.85; }
+  button.secondary { background: #383838; color: #ccc; }
+  button.tool { width: auto; padding: 5px 11px; font-size: 0.8em; }
+  button.icon { width: auto; padding: 2px 7px; font-size: 11px; background: #2e2e2e; color: #999; }
+  button.icon:hover { background: #444; color: white; }
+  button.icon.active { background: #0a1a2a; color: var(--accent); }
+
+  #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; place-items: center; z-index: 1000; }
+  #modal { background: var(--panel); border: 1px solid var(--border); padding: 24px; border-radius: 8px; width: 400px; }
+
+  .upload-zone { border: 2px dashed var(--border); padding: 12px; text-align: center; color: #555; margin-top: 14px; font-size: 0.8em; border-radius: 4px; }
+
+/* Spotify + SFX sub-sections */
+#spotify-section { flex: 0 0 auto; max-height: 50%; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); overflow: hidden; }
+#spotify-section .panel-content { flex: 1; overflow-y: auto; padding: 10px 12px; }
+#sfx-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+#sfx-section .panel-content { flex: 1; overflow-y: auto; padding: 10px 12px; }
+#spotify-add-form { padding: 8px 12px; border-top: 1px solid #222; flex-shrink: 0; }
+.spotify-item { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 4px; cursor: grab; font-size: 0.84em; color: #aaa; user-select: none; }
+.spotify-item:hover { background: #1e1e1e; color: var(--text); }
+.spotify-item.dragging-spotify { opacity: 0.45; }
+.spotify-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.spotify-drop-zone { padding: 9px 12px; border-radius: 4px; border: 1px dashed #333; color: #555; font-size: 0.85em; min-height: 36px; margin-bottom: 4px; display: flex; align-items: center; cursor: default; }
+.spotify-drop-zone.has-uri { color: #ccc; border-color: #444; border-style: solid; }
+.spotify-drop-zone.drop-active { border-color: var(--accent); border-style: dashed; background: #051a2a; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+  <strong style="color: var(--accent)">STUDIO</strong>
+  <input id="session-name-input" type="text" value="New Session"
+    style="width:200px; margin:0; padding:4px 8px; font-size:0.9em;"
+    oninput="sessionName = this.value">
+  <button class="tool" onclick="newSession()">New</button>
+  <button class="tool" onclick="openSessionList()">Open</button>
+  <button class="tool" onclick="saveSession()">Save</button>
+</div>
+
+<div id="main-layout">
+
+  <!-- Arc panel -->
+  <div class="panel" id="arc-panel">
+    <div class="panel-header">
+      <h2>Arc</h2>
+      <button style="width:auto; padding:3px 9px;" onclick="addScene()">+</button>
+    </div>
+    <div class="panel-content" id="arc-list"></div>
+  </div>
+
+  <!-- Editor panel -->
+  <div class="panel" id="editor-panel">
+    <div class="panel-header"><h2>Scene Editor</h2></div>
+    <div class="panel-content" id="editor-content">
+      <p style="color:#555">Select a scene from the left to edit.</p>
+    </div>
+  </div>
+
+  <!-- Light effects panel -->
+  <div class="panel" id="light-panel">
+    <div class="panel-header"><h2>Light</h2></div>
+    <div class="panel-content">
+      <div id="effects-list"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="sound-panel">
+    <div id="spotify-section">
+      <div class="panel-header">
+        <h2>Spotify</h2>
+        <button class="icon" onclick="showAddSpotify()" title="Add playlist">+</button>
+      </div>
+      <div class="panel-content" id="spotify-list"></div>
+      <div id="spotify-add-form" style="display:none;">
+        <input id="spotify-add-name" type="text" placeholder="Name" style="margin-bottom:5px;"
+          onkeydown="if(event.key==='Enter')confirmAddSpotify(); if(event.key==='Escape')hideAddSpotify();">
+        <input id="spotify-add-uri" type="text" placeholder="spotify:playlist:… or https://…" style="margin-bottom:5px;"
+          onkeydown="if(event.key==='Enter')confirmAddSpotify(); if(event.key==='Escape')hideAddSpotify();">
+        <div style="display:flex; gap:6px;">
+          <button class="secondary" style="flex:1;" onclick="confirmAddSpotify()">Add</button>
+          <button class="secondary" style="flex:1;" onclick="hideAddSpotify()">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id="sfx-section">
+      <div class="panel-header"><h2>SFX</h2></div>
+      <div class="panel-content">
+        <div class="path-row" id="sfx-path-row">
+          <span class="path-text" id="sfx-root-display"></span>
+          <button class="icon" onclick="startPathEdit()" title="Change root">✎</button>
+        </div>
+        <div id="sfx-path-edit" style="display:none; margin-bottom:10px;">
+          <input id="sfx-path-input" type="text" placeholder="/path/to/sfx-library" style="margin-bottom:6px;"
+            onkeydown="if(event.key==='Enter')confirmPathEdit(); if(event.key==='Escape')cancelPathEdit();">
+          <div style="display:flex; gap:6px;">
+            <button class="secondary" style="flex:1;" onclick="confirmPathEdit()">Apply</button>
+            <button class="secondary" style="flex:1;" onclick="cancelPathEdit()">Cancel</button>
+          </div>
+        </div>
+        <div class="breadcrumb" id="sfx-breadcrumb"></div>
+        <div id="library-list"></div>
+        <div class="upload-zone" id="upload-zone">Drop WAV to upload to current folder</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Session modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h3 id="modal-title" style="margin-top:0">Open Session</h3>
+    <div id="modal-body"></div>
+    <div style="display:flex; gap:8px; margin-top:16px;">
+      <button class="secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let effects = [], library = {}, arc = [], activeSceneIndex = -1, sessionName = "New Session";
+let currentPath = "";
+let _soundTarget = null;  // null | trigger-index — which trigger is waiting for a sound pick
+let _dragAudioId = null;  // audio ID being dragged from the SFX panel
+let _dragAudioPath = null;
+let _dragIndex = null;    // arc scene index being reordered
+let _dragEffectRef = null;    // effect ref being dragged from the light panel
+let _dragSpotifyUri = null;
+
+function loadSpotifyPlaylists() { return JSON.parse(localStorage.getItem('spotifyPlaylists') || '[]'); }
+function saveSpotifyPlaylists(list) { localStorage.setItem('spotifyPlaylists', JSON.stringify(list)); }
+
+function renderSpotifyList() {
+  const list = loadSpotifyPlaylists();
+  const el = document.getElementById('spotify-list');
+  if (list.length === 0) {
+    el.innerHTML = '<div style="padding:4px 0; color:#444; font-size:0.82em;">No playlists — click + to add</div>';
+    return;
+  }
+  el.innerHTML = list.map((item, i) => `
+    <div class="spotify-item" draggable="true"
+         data-uri="${item.uri.replace(/"/g,'&quot;')}"
+         ondragstart="onSpotifyDragStart(this)" ondragend="onSpotifyDragEnd()"
+         ondblclick="if(activeSceneIndex>=0){updateScene('spotify',{...arc[activeSceneIndex].spotify,uri:this.dataset.uri});}">
+      <span style="color:var(--accent);font-size:10px;">♫</span>
+      <span class="spotify-item-name" title="${item.uri.replace(/"/g,'&quot;')}">${item.name}</span>
+      <button class="icon" onclick="event.stopPropagation();openSpotifyUri(this.closest('.spotify-item').dataset.uri)" title="Open">▶</button>
+      <button class="icon" onclick="event.stopPropagation();removeSpotifyItem(${i})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+function showAddSpotify() { document.getElementById('spotify-add-form').style.display='block'; document.getElementById('spotify-add-name').focus(); }
+function hideAddSpotify() {
+  document.getElementById('spotify-add-form').style.display='none';
+  document.getElementById('spotify-add-name').value='';
+  document.getElementById('spotify-add-uri').value='';
+}
+function confirmAddSpotify() {
+  const name = document.getElementById('spotify-add-name').value.trim();
+  const uri = document.getElementById('spotify-add-uri').value.trim();
+  if (!name || !uri) return;
+  const list = loadSpotifyPlaylists();
+  list.push({name, uri});
+  saveSpotifyPlaylists(list);
+  renderSpotifyList();
+  hideAddSpotify();
+}
+function removeSpotifyItem(index) {
+  const list = loadSpotifyPlaylists();
+  list.splice(index, 1);
+  saveSpotifyPlaylists(list);
+  renderSpotifyList();
+}
+function openSpotifyUri(uri) {
+  const spotifyUri = uri.startsWith('spotify:') ? uri
+    : 'spotify:' + uri.replace(/^https?\:\/\/open\.spotify\.com\//, '').replace(/\//g, ':').split('?')[0];
+  const a = document.createElement('a');
+  a.href = spotifyUri;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => document.body.removeChild(a), 100);
+}
+function onSpotifyDragStart(el) { _dragSpotifyUri = el.dataset.uri; el.classList.add('dragging-spotify'); }
+function onSpotifyDragEnd() {
+  document.querySelectorAll('.dragging-spotify').forEach(e => e.classList.remove('dragging-spotify'));
+  _dragSpotifyUri = null;
+}
+let _previewingEffect = null; // currently active preview effect (null = off)
+let _dirty = false;       // true when there are unsaved changes
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  const [effRes, rootRes] = await Promise.all([fetch('/api/effects'), fetch('/api/sfx/config')]);
+  effects = await effRes.json();
+  const rootData = await rootRes.json();
+  document.getElementById('sfx-root-display').textContent = rootData.path;
+  renderArc(); renderExplorer(); renderEffects();
+  renderSpotifyList();
+}
+
+// ── SFX path editing ──────────────────────────────────────────────────────────
+
+function startPathEdit() {
+  document.getElementById('sfx-path-row').style.display = 'none';
+  document.getElementById('sfx-path-edit').style.display = 'block';
+  const input = document.getElementById('sfx-path-input');
+  input.value = document.getElementById('sfx-root-display').textContent;
+  input.focus(); input.select();
+}
+async function confirmPathEdit() {
+  const newPath = document.getElementById('sfx-path-input').value.trim();
+  if (newPath) {
+    const res = await fetch('/api/sfx/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: newPath })
+    });
+    const data = await res.json();
+    if (data.ok) { document.getElementById('sfx-root-display').textContent = data.path; renderExplorer(''); }
+    else alert('Invalid path: ' + data.error);
+  }
+  cancelPathEdit();
+}
+function cancelPathEdit() {
+  document.getElementById('sfx-path-edit').style.display = 'none';
+  document.getElementById('sfx-path-row').style.display = 'flex';
+}
+
+// ── Session management ────────────────────────────────────────────────────────
+
+function newSession() {
+  if (_dirty && !confirm("Discard current work?")) return;
+  arc = []; activeSceneIndex = -1; sessionName = "New Session";
+  document.getElementById('session-name-input').value = "New Session";
+  _dirty = false;
+  renderArc(); renderEditor();
+}
+
+async function openSessionList() {
+  const res = await fetch('/api/sessions'); const files = await res.json();
+  document.getElementById('modal-body').innerHTML = files.map(f => `
+    <div class="item" style="display:flex; justify-content:space-between; align-items:center;"
+         data-name="${f.replace(/"/g, '&quot;')}" onclick="loadSession(this.dataset.name)">
+      <span>${f.replace(/\.json$/, '')}</span>
+      <button class="secondary" style="width:auto; margin:0; padding:3px 8px; font-size:10px;"
+              data-name="${f.replace(/"/g, '&quot;')}" onclick="deleteSession(this.dataset.name, event)">Delete</button>
+    </div>`).join('');
+  document.getElementById('modal-title').textContent = "Open Session";
+  document.getElementById('modal-overlay').style.display = 'grid';
+}
+
+async function loadSession(name) {
+  const res = await fetch(`/api/sessions/${name}`); const data = await res.json();
+  arc = data.arc; sessionName = data.name || name.replace('.json', '');
+  document.getElementById('session-name-input').value = sessionName;
+  library = data.audio_manifest || {};
+  _dirty = false;
+  closeModal(); renderArc(); selectScene(0);
+}
+
+async function saveSession() {
+  if (!sessionName || sessionName === 'New Session') {
+    const n = prompt('Session name:', sessionName);
+    if (!n) return;
+    sessionName = n;
+    document.getElementById('session-name-input').value = sessionName;
+  }
+  await fetch(`/api/sessions/${sessionName}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: sessionName, arc, audio_manifest: library })
+  });
+  _dirty = false;
+}
+
+async function deleteSession(name, event) {
+  event.stopPropagation();
+  if (!confirm(`Delete ${name}?`)) return;
+  await fetch(`/api/sessions/${name}`, { method: 'DELETE' });
+  openSessionList();
+}
+
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+// ── Arc ───────────────────────────────────────────────────────────────────────
+
+function addScene() {
+  _dirty = true;
+  arc.push({
+    id: `scene-${Date.now()}`, name: "New Scene",
+    govee_effect: { ref: effects[0]?.ref || "off", definition: {} },
+    ambient: null, ambient_volume: 50,
+    spotify: { uri: "", volume: 50 },
+    triggers: []
+  });
+  renderArc(); selectScene(arc.length - 1);
+}
+
+function renderArc() {
+  document.getElementById('arc-list').innerHTML = arc.map((s, i) => `
+    <div class="item ${i === activeSceneIndex ? 'active' : ''}"
+         style="display:flex; justify-content:space-between; align-items:center;"
+         draggable="true" data-index="${i}"
+         onclick="selectScene(${i})"
+         ondragstart="onArcDragStart(event, ${i})"
+         ondragover="onArcDragOver(event)"
+         ondragleave="onArcDragLeave(event)"
+         ondrop="onArcDrop(event, ${i})"
+         ondragend="onArcDragEnd(event)">
+      <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${i+1}. ${s.name}</span>
+      <button class="icon" style="flex-shrink:0; margin-left:4px;" onclick="event.stopPropagation(); deleteScene(${i})">×</button>
+    </div>`).join('');
+}
+
+function deleteScene(index) {
+  _dirty = true;
+  arc.splice(index, 1);
+  if (arc.length === 0) {
+    activeSceneIndex = -1;
+  } else if (activeSceneIndex >= arc.length) {
+    activeSceneIndex = arc.length - 1;
+  } else if (activeSceneIndex > index) {
+    activeSceneIndex--;
+  }
+  renderArc(); renderEditor();
+}
+
+function onArcDragStart(e, index) {
+  _dragIndex = index; _dragAudioId = null;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onArcDragOver(e) {
+  if (_dragAudioId !== null || _dragEffectRef !== null || _dragSpotifyUri !== null) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onArcDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onArcDrop(e, targetIndex) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if (_dragAudioId !== null || _dragEffectRef !== null || _dragSpotifyUri !== null || _dragIndex === null || _dragIndex === targetIndex) return;
+  const moved = arc.splice(_dragIndex, 1)[0];
+  arc.splice(targetIndex, 0, moved);
+  activeSceneIndex = targetIndex; _dragIndex = null;
+  renderArc();
+}
+function onArcDragEnd(e) { e.currentTarget.classList.remove('dragging'); _dragIndex = null; }
+
+function selectScene(index) {
+  activeSceneIndex = index; _soundTarget = null;
+  renderArc(); renderEditor();
+}
+
+// ── Editor ────────────────────────────────────────────────────────────────────
+
+function renderEditor() {
+  const content = document.getElementById('editor-content');
+  const scene = arc[activeSceneIndex];
+  if (!scene) { content.innerHTML = '<p style="color:#555">Select a scene from the left to edit.</p>'; return; }
+
+  const ambientLabel = scene.ambient
+    ? (library[scene.ambient]?.source_name || scene.ambient)
+    : null;
+
+  content.innerHTML = `
+    <div class="field-label">Name</div>
+    <input type="text" value="${scene.name}" oninput="updateScene('name', this.value)">
+
+    <div class="field-label">Light Effect</div>
+    <div class="light-drop-zone"
+         ondragover="if(_dragEffectRef){event.preventDefault();this.classList.add('drop-active');}"
+         ondragleave="this.classList.remove('drop-active');"
+         ondrop="onLightDrop(event); this.classList.remove('drop-active');">
+      <select style="background:transparent; border:none; color:inherit; width:100%; padding:7px 9px;"
+              onchange="_dirty=true; updateScene('govee_effect', {ref: this.value, definition: {}})">
+        ${effects.map(e => `<option value="${e.ref}" ${e.ref === scene.govee_effect.ref ? 'selected' : ''}>${e.name}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="field-label">Sound <span style="color:#444; font-size:0.85em; text-transform:none; letter-spacing:0">— ambient loop</span></div>
+    <div class="sound-zone ${ambientLabel ? 'has-sound' : ''}"
+         ondragover="event.preventDefault(); this.classList.add('drop-active');"
+         ondragleave="this.classList.remove('drop-active');"
+         ondrop="onAmbientDrop(event); this.classList.remove('drop-active');">
+      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${ambientLabel || 'Drop a file here, or double-click in the library'}</span>
+      ${ambientLabel ? `<button class="icon" style="flex-shrink:0; margin-left:8px;" onclick="updateScene('ambient', null); renderEditor();">×</button>` : ''}
+    </div>
+    ${ambientLabel ? `<input type="range" min="0" max="100" value="${scene.ambient_volume}" title="Volume" style="margin-top:4px;" onchange="updateScene('ambient_volume', parseInt(this.value))">` : ''}
+
+    <div class="field-label">Music <span style="color:#444; font-size:0.85em; text-transform:none; letter-spacing:0">— Spotify playlist</span></div>
+    <div class="spotify-drop-zone ${scene.spotify.uri ? 'has-uri' : ''}"
+         ondragover="if(_dragSpotifyUri){event.preventDefault();this.classList.add('drop-active');}"
+         ondragleave="this.classList.remove('drop-active')"
+         ondrop="event.preventDefault();this.classList.remove('drop-active');if(_dragSpotifyUri){updateScene('spotify',{...arc[activeSceneIndex].spotify,uri:_dragSpotifyUri});}">
+      ${scene.spotify.uri
+        ? `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${loadSpotifyPlaylists().find(p=>p.uri===scene.spotify.uri)?.name || scene.spotify.uri}</span>
+           <button class="icon" style="flex-shrink:0;margin-left:8px;" onclick="updateScene('spotify',{uri:'',volume:50});renderEditor();">×</button>`
+        : `<span style="color:#555;">Drop playlist here</span>`}
+    </div>
+    ${scene.spotify.uri ? `<input type="range" min="0" max="100" value="${scene.spotify.volume}" title="Spotify volume" style="margin-top:2px;" onchange="updateScene('spotify',{...arc[activeSceneIndex].spotify,volume:parseInt(this.value)})">` : ''}
+
+    <hr class="divider">
+    <div class="section-title">Triggers</div>
+    <div id="trigger-list">
+      ${scene.triggers.map((t, i) => renderTriggerCard(t, i)).join('')}
+    </div>
+    <button style="margin-top:4px;" onclick="addTriggerPrompt()">+ Add Trigger</button>`;
+}
+
+function renderTriggerCard(t, i) {
+  const soundLabel = t.sound ? (library[t.sound]?.source_name || t.sound) : null;
+  const isTarget = _soundTarget === i;
+  return `
+    <div class="trigger-card ${isTarget ? 'sound-target' : ''}"
+         ondragover="event.preventDefault(); this.classList.add('drop-active');"
+         ondragleave="this.classList.remove('drop-active');"
+         ondrop="onTriggerDrop(event, ${i}); this.classList.remove('drop-active');">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong style="font-size:0.9em">${t.name}</strong>
+        <button class="icon" onclick="removeTrigger(${i})">×</button>
+      </div>
+      <div class="trigger-row">
+        <span class="row-label">Sound</span>
+        <span style="flex:1; font-size:0.82em; color:${soundLabel ? '#bbb' : '#444'}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${soundLabel || '—'}</span>
+        <button class="icon ${isTarget ? 'active' : ''}" onclick="setSoundTarget(${i})" title="${isTarget ? 'Now click a file in the library' : 'Pick a sound from the library'}">${isTarget ? '● pick' : 'Set'}</button>
+      </div>
+      <div class="trigger-row">
+        <span class="row-label">Light</span>
+        <select style="flex:1; margin:0; padding:5px; font-size:0.82em;" onchange="updateTrigger(${i}, 'govee_flash', this.value ? {ref:this.value} : null)">
+          <option value="" ${!t.govee_flash ? 'selected' : ''}>none</option>
+          <option value="white-burst" ${t.govee_flash?.ref==='white-burst' ? 'selected' : ''}>white burst</option>
+          <option value="orange-burst" ${t.govee_flash?.ref==='orange-burst' ? 'selected' : ''}>orange burst</option>
+          <option value="purple-pulse" ${t.govee_flash?.ref==='purple-pulse' ? 'selected' : ''}>purple pulse</option>
+        </select>
+      </div>
+    </div>`;
+}
+
+function updateScene(field, value) { _dirty = true; arc[activeSceneIndex][field] = value; renderArc(); }
+function updateTrigger(index, field, value) { _dirty = true; arc[activeSceneIndex].triggers[index][field] = value; }
+function setSoundTarget(index) { _soundTarget = (_soundTarget === index) ? null : index; renderEditor(); }
+function removeTrigger(index) { _dirty = true; arc[activeSceneIndex].triggers.splice(index, 1); renderEditor(); }
+
+function addTriggerPrompt() {
+  const name = prompt("Trigger name:");
+  if (name) {
+    _dirty = true;
+    arc[activeSceneIndex].triggers.push({ id: `trigger-${Date.now()}`, name, sound: "", govee_flash: null });
+    renderEditor();
+  }
+}
+
+// ── Sound drop handlers ───────────────────────────────────────────────────────
+
+function _registerAudio(audioId, path) {
+  if (!library[audioId]) library[audioId] = { file: path, source_name: path.split('/').pop() };
+}
+
+function onAmbientDrop(e) {
+  e.preventDefault();
+  if (!_dragAudioId) return;
+  _registerAudio(_dragAudioId, _dragAudioPath);
+  _dirty = true;
+  updateScene('ambient', _dragAudioId);
+  _dragAudioId = null; _dragAudioPath = null;
+  renderEditor();
+}
+
+function onTriggerDrop(e, index) {
+  e.preventDefault();
+  if (!_dragAudioId) return;
+  _registerAudio(_dragAudioId, _dragAudioPath);
+  _dirty = true;
+  arc[activeSceneIndex].triggers[index].sound = _dragAudioId;
+  _dragAudioId = null; _dragAudioPath = null;
+  renderEditor();
+}
+
+// ── SFX Explorer ──────────────────────────────────────────────────────────────
+
+async function renderExplorer(path = "") {
+  currentPath = path;
+  const res = await fetch(`/api/sfx/tree?path=${encodeURIComponent(path)}`);
+  const items = await res.json();
+
+  const bread = document.getElementById('sfx-breadcrumb');
+  bread.innerHTML = '<span onclick="renderExplorer(\'\')">Root</span>' +
+    path.split('/').filter(x => x).map((p, i, arr) =>
+      ` / <span onclick="renderExplorer('${arr.slice(0, i+1).join('/')}')">${p}</span>`
+    ).join('');
+
+  if (path !== "") {
+    const parts = path.split('/'); parts.pop();
+    items.unshift({ name: "..", is_dir: true, path: parts.join('/') });
+  }
+
+  document.getElementById('library-list').innerHTML = items.map(item => {
+    if (item.is_dir) {
+      return `<div class="sfx-dir" data-path="${item.path.replace(/"/g, '&quot;')}" onclick="renderExplorer(this.dataset.path)">📁 ${item.name}</div>`;
+    }
+    const audioId = item.path.replace('.ogg', '').replace(/\//g, '-');
+    return `<div class="sfx-file"
+      draggable="true"
+      data-audio-id="${audioId.replace(/"/g, '&quot;')}"
+      data-path="${item.path.replace(/"/g, '&quot;')}"
+      data-name="${item.name.replace(/"/g, '&quot;')}"
+      ondragstart="onSfxDragStart(event, this.dataset.audioId, this.dataset.path)"
+      ondragend="onSfxDragEnd(event)"
+      ondblclick="onSfxDblClick(this.dataset.audioId, this.dataset.path, this.dataset.name)"
+      onclick="previewSound(this.dataset.path)">
+      🎵 <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name}</span>
+      <button class="icon" style="flex-shrink:0;" onclick="event.stopPropagation(); previewSound(this.parentElement.dataset.path)">▶</button>
+    </div>`;
+  }).join('');
+}
+
+function previewSound(path) {
+  new Audio(`/api/sfx/file/${path}`).play();
+}
+
+function onSfxDragStart(e, audioId, path) {
+  _dragAudioId = audioId; _dragAudioPath = path;
+  _registerAudio(audioId, path);
+  e.currentTarget.classList.add('dragging-file');
+  e.dataTransfer.effectAllowed = 'copy';
+}
+function onSfxDragEnd(e) { e.currentTarget.classList.remove('dragging-file'); }
+
+function onSfxDblClick(audioId, path, name) {
+  _registerAudio(audioId, path);
+  const scene = arc[activeSceneIndex];
+  if (!scene) return;
+  _dirty = true;
+  if (_soundTarget !== null) {
+    scene.triggers[_soundTarget].sound = audioId;
+    _soundTarget = null;
+  } else {
+    updateScene('ambient', audioId);
+  }
+  renderEditor();
+}
+
+// ── Light Effects Explorer ────────────────────────────────────────────────────
+
+function renderEffects() {
+  document.getElementById('effects-list').innerHTML = effects
+    .filter(e => e.ref !== 'off')
+    .map(e => `
+    <div class="effect-card ${_previewingEffect === e.ref ? 'active' : ''}"
+         draggable="true"
+         data-ref="${e.ref}"
+         title="${(e.description || '').replace(/"/g, '&quot;')}"
+         onclick="previewEffect(this.dataset.ref)"
+         ondblclick="onEffectDblClick(this.dataset.ref)"
+         ondragstart="onEffectDragStart(event, this.dataset.ref)"
+         ondragend="onEffectDragEnd(event)">
+      <div class="effect-dot" style="background:${e.color || '#555'};"></div>
+      <span style="flex:1;">${e.name}</span>
+    </div>`).join('');
+}
+
+async function previewEffect(ref) {
+  if (_previewingEffect === ref) {
+    _previewingEffect = null;
+    await fetch('/scene/off', { method: 'POST' });
+  } else {
+    _previewingEffect = ref;
+    await fetch(`/scene/${ref}`, { method: 'POST' });
+  }
+  renderEffects();
+}
+
+function onEffectDblClick(ref) {
+  if (activeSceneIndex < 0) return;
+  _dirty = true;
+  updateScene('govee_effect', { ref, definition: {} });
+  renderEditor();
+}
+
+function onEffectDragStart(e, ref) {
+  _dragEffectRef = ref; _dragAudioId = null;
+  e.currentTarget.classList.add('dragging-file');
+  e.dataTransfer.effectAllowed = 'copy';
+}
+function onEffectDragEnd(e) { _dragEffectRef = null; e.currentTarget.classList.remove('dragging-file'); }
+
+function onLightDrop(e) {
+  e.preventDefault();
+  if (!_dragEffectRef) return;
+  _dirty = true;
+  updateScene('govee_effect', { ref: _dragEffectRef, definition: {} });
+  _dragEffectRef = null;
+  renderEditor();
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+
+const uploadZone = document.getElementById('upload-zone');
+uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.style.borderColor = 'var(--accent)'; };
+uploadZone.ondragleave = () => { uploadZone.style.borderColor = 'var(--border)'; };
+uploadZone.ondrop = async (e) => {
+  e.preventDefault(); uploadZone.style.borderColor = 'var(--border)';
+  if (!e.dataTransfer.files.length) return;
+  const file = e.dataTransfer.files[0];
+  const desc = prompt("Short description:", file.name.replace('.wav', ''));
+  if (!desc) return;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('category', currentPath || "misc");
+  formData.append('description', desc);
+  uploadZone.textContent = "Uploading…";
+  const res = await fetch('/api/upload', { method: 'POST', body: formData });
+  const data = await res.json();
+  if (data.audio_id) {
+    renderExplorer(currentPath);
+    uploadZone.textContent = "Done.";
+    setTimeout(() => uploadZone.textContent = "Drop WAV to upload to current folder", 2000);
+  }
+};
+
+init();
+</script>
+</body>
+</html>
