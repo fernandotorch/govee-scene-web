@@ -317,17 +317,6 @@ def manage_session(name):
     if request.method == "POST":
         data = request.json
         with open(path, "w") as f: json.dump(data, f, indent=2)
-        pack_name = name.replace('.json', '')
-        zip_path = os.path.join(PACKS_DIR, f"{pack_name}.zip")
-        session_payload = {
-            "version": 1,
-            "name": data.get("name", pack_name),
-            "exported": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "arc": data.get("arc", []),
-            "audio_manifest": data.get("audio_manifest", {})
-        }
-        with zipfile.ZipFile(zip_path, "w") as z:
-            z.writestr("session.json", json.dumps(session_payload, indent=2))
         return jsonify({"ok": True})
     if request.method == "DELETE":
         if os.path.exists(path):
@@ -355,6 +344,10 @@ def export_pack():
                 ext = os.path.splitext(audio_path)[1].lower()
                 if ext not in ['.ogg', '.wav', '.mp3', '.flac']:
                     warnings.append(f'Unsupported format: {info["file"]}')
+                    continue
+                file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
+                if file_size_mb > 20:
+                    warnings.append(f'Too large ({file_size_mb:.0f} MB): {info["file"]} — convert to MP3 first')
                     continue
                 base_id = re.sub(r'\.(ogg|wav|mp3|flac)$', '', audio_id, flags=re.IGNORECASE)
                 out_name = base_id + ext

@@ -280,6 +280,8 @@ function onSpotifyDragEnd() {
   document.querySelectorAll('.dragging-spotify').forEach(e => e.classList.remove('dragging-spotify'));
   _dragSpotifyUri = null;
 }
+let _previewAudio = null;
+let _previewAudioPath = null;
 let _previewingEffect = null; // currently active preview effect (null = off)
 let _dirty = false;       // true when there are unsaved changes
 
@@ -372,9 +374,18 @@ async function _syncPack() {
   const el = document.getElementById('sync-status');
   el.textContent = 'Syncing…'; el.style.color = '#888';
   try {
+    const usedIds = new Set();
+    for (const scene of arc) {
+      if (scene.ambient) usedIds.add(scene.ambient);
+      for (const t of (scene.triggers || [])) {
+        if (t.sound) usedIds.add(t.sound);
+      }
+    }
+    const usedLibrary = {};
+    for (const id of usedIds) { if (library[id]) usedLibrary[id] = library[id]; }
     const res = await fetch('/api/export', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: sessionName, arc, audio_manifest: library })
+      body: JSON.stringify({ name: sessionName, arc, audio_manifest: usedLibrary })
     });
     const data = await res.json();
     if (!res.ok) {
@@ -383,7 +394,8 @@ async function _syncPack() {
       return;
     }
     if (data.warnings && data.warnings.length) {
-      el.textContent = '⚠ ' + data.warnings.length + ' file(s) missing from library';
+      const extra = data.warnings.length > 1 ? ` (+${data.warnings.length - 1} more)` : '';
+      el.textContent = '⚠ ' + data.warnings[0] + extra;
       el.style.color = '#f90';
     } else {
       el.textContent = 'Ready for phone ✓'; el.style.color = '#4a9';
@@ -577,7 +589,8 @@ function addTriggerPrompt() {
 // ── Sound drop handlers ───────────────────────────────────────────────────────
 
 function _registerAudio(audioId, path) {
-  if (!library[audioId]) library[audioId] = { file: path, source_name: path.split('/').pop(), duration_ms: 0 };
+  const existing = library[audioId];
+  library[audioId] = { file: path, source_name: path.split('/').pop(), duration_ms: existing?.duration_ms ?? 0 };
 }
 
 function onAmbientDrop(e) {
@@ -645,7 +658,15 @@ async function renderExplorer(path = "") {
 }
 
 function previewSound(path) {
-  new Audio(`/api/sfx/file/${path}`).play();
+  if (_previewAudio) {
+    _previewAudio.pause();
+    _previewAudio = null;
+    if (_previewAudioPath === path) { _previewAudioPath = null; return; }
+  }
+  _previewAudioPath = path;
+  _previewAudio = new Audio(`/api/sfx/file/${encodeURIComponent(path)}`);
+  _previewAudio.onended = () => { _previewAudio = null; _previewAudioPath = null; };
+  _previewAudio.play();
 }
 
 function previewTrigger(index) {
