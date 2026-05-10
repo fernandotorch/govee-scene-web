@@ -109,9 +109,9 @@
       "source_name": "233434__rocktopus__rain1.ogg"
     },
     "freesound-weather-rain": {
+      "duration_ms": 0,
       "file": "freesound/weather/rain.ogg",
-      "source_name": "rain.ogg",
-      "duration_ms": 0
+      "source_name": "rain.ogg"
     }
   }
 }
