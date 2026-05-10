@@ -1,0 +1,7 @@
+{
+  "ref": "orange-burst",
+  "name": "Orange Burst",
+  "type": "burst",
+  "color": "#ff6400",
+  "description": "200ms orange flash"
+}

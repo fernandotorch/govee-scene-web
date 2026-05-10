@@ -1,0 +1,8 @@
+{
+  "ref": "police",
+  "name": "Police",
+  "type": "ambient",
+  "category": "action",
+  "color": "#2244ee",
+  "description": "Alternating red and blue flashes"
+}

@@ -6,6 +6,7 @@ govee_controller.py — TTRPG session lighting controller + Studio Backend
 import base64
 import socket
 import json
+import re
 import time
 import threading
 import random
@@ -15,7 +16,6 @@ import sys
 import subprocess
 import hashlib
 import zipfile
-import shutil
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
 # ── Network ───────────────────────────────────────────────────────────────────
@@ -166,6 +166,32 @@ SCENES = {
     "disian": lambda: _run(_disian_loop),
 }
 
+BURST_DEFS = {
+    'white-burst':  (255, 255, 255, 0.2),
+    'orange-burst': (255, 100,   0, 0.3),
+    'purple-pulse': (180,   0, 255, 0.3),
+}
+
+_burst_timer = None
+_burst_gen   = 0
+
+def _burst_end():
+    _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
+
+def _fire_burst(r, g, b, duration):
+    global _burst_timer, _burst_gen
+    if _burst_timer is not None:
+        _burst_timer.cancel()
+    _burst_gen += 1
+    gen = _burst_gen
+    _on()
+    _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
+    def _timed_off():
+        if _burst_gen == gen:
+            _burst_end()
+    _burst_timer = threading.Timer(duration, _timed_off)
+    _burst_timer.start()
+
 # ── Studio Logic ──────────────────────────────────────────────────────────────
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -206,7 +232,7 @@ def _load_effects():
                 with open(os.path.join(EFFECTS_DIR, fname)) as f:
                     try:
                         d = json.load(f)
-                        if d.get("ref") in SCENES:
+                        if d.get("ref"):
                             descriptors.append(d)
                     except Exception:
                         pass
@@ -214,12 +240,17 @@ def _load_effects():
         descriptors = [{"ref": k, "name": k.capitalize(), "color": "#555555"} for k in SCENES]
     return descriptors
 
-EFFECT_DESCRIPTORS = _load_effects()
-
 @app.route("/api/effects", methods=["GET"])
-def get_effects(): return jsonify(EFFECT_DESCRIPTORS)
+def get_effects(): return jsonify(_load_effects())
 
-@app.route("/api/sfx/tree")
+@app.route("/api/effects/<ref>/preview", methods=["POST"])
+def preview_burst(ref):
+    defn = BURST_DEFS.get(ref)
+    if not defn:
+        return jsonify({"error": "unknown burst ref"}), 404
+    _fire_burst(*defn)
+    return jsonify({"ok": True})
+
 @app.route("/api/sfx/config", methods=["GET", "POST"])
 def sfx_config():
     global SFX_DIR
@@ -308,21 +339,37 @@ def manage_session(name):
 
 @app.route("/api/export", methods=["POST"])
 def export_pack():
-    data = request.json; pack_name = data.get("name", "New Session")
-    arc = data.get("arc", []); audio_manifest = data.get("audio_manifest", {})
-    session_json = {
-        "version": 1, "name": pack_name,
-        "exported": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "arc": arc, "audio_manifest": audio_manifest
-    }
-    pack_id = hashlib.md5(pack_name.encode()).hexdigest()[:8]
-    zip_filename = f"pack-{pack_id}.zip"; zip_path = os.path.join(PACKS_DIR, zip_filename)
-    with zipfile.ZipFile(zip_path, "w") as z:
-        z.writestr("session.json", json.dumps(session_json, indent=2))
-        for audio_id, info in audio_manifest.items():
-            audio_path = os.path.join(SFX_DIR, info["file"])
-            if os.path.exists(audio_path): z.write(audio_path, os.path.basename(info["file"]))
-    return jsonify({"url": f"/api/packs/{zip_filename}"})
+    try:
+        data = request.json; pack_name = data.get("name", "New Session")
+        arc = data.get("arc", []); audio_manifest = data.get("audio_manifest", {})
+        safe_name = re.sub(r'[^\w\s\-]', '', pack_name).strip().replace(' ', '_')
+        zip_filename = f"{safe_name}.zip"; zip_path = os.path.join(PACKS_DIR, zip_filename)
+
+        warnings = []
+        with zipfile.ZipFile(zip_path, 'w') as z:
+            for audio_id, info in audio_manifest.items():
+                audio_path = os.path.join(SFX_DIR, info['file'])
+                if not os.path.exists(audio_path):
+                    warnings.append(f'Missing: {info["file"]}')
+                    continue
+                ext = os.path.splitext(audio_path)[1].lower()
+                if ext not in ['.ogg', '.wav', '.mp3', '.flac']:
+                    warnings.append(f'Unsupported format: {info["file"]}')
+                    continue
+                base_id = re.sub(r'\.(ogg|wav|mp3|flac)$', '', audio_id, flags=re.IGNORECASE)
+                out_name = base_id + ext
+                z.write(audio_path, out_name)
+                info['file'] = out_name
+            session_json = {
+                'version': 1, 'name': pack_name,
+                'exported': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                'arc': arc, 'audio_manifest': audio_manifest
+            }
+            z.writestr('session.json', json.dumps(session_json, indent=2))
+
+        return jsonify({"url": f"/api/packs/{zip_filename}", "warnings": warnings})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route("/api/packs/<filename>")
 def get_pack(filename): return send_from_directory(PACKS_DIR, filename)
@@ -343,4 +390,4 @@ if __name__ == "__main__":
             local_ip = subprocess.check_output(["hostname", "-I"], text=True).split()[0]
         except Exception: local_ip = "localhost"
         print(f"\n{'─' * 40}\n  Lighting Lab: http://{local_ip}:5000\n  Studio:       http://{local_ip}:5000/studio\n{'─' * 40}\n")
-    app.run(host="0.0.0.0", port=5000, use_reloader=True)
+    app.run(host="0.0.0.0", port=5000, use_reloader=True, threaded=True)

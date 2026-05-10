@@ -1,0 +1,8 @@
+{
+  "ref": "alarm",
+  "name": "Alarm",
+  "type": "ambient",
+  "category": "action",
+  "color": "#ff4400",
+  "description": "Pulsing orange-red alarm"
+}

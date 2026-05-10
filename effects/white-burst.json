@@ -1,0 +1,7 @@
+{
+  "ref": "white-burst",
+  "name": "White Burst",
+  "type": "burst",
+  "color": "#ffffff",
+  "description": "200ms white flash"
+}

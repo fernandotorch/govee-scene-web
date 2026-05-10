@@ -1,0 +1,7 @@
+{
+  "ref": "purple-pulse",
+  "name": "Purple Pulse",
+  "type": "burst",
+  "color": "#b400ff",
+  "description": "300ms purple flash"
+}
