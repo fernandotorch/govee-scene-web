@@ -1,0 +1,117 @@
+{
+  "name": "Disruption",
+  "scenes": [
+    {
+      "ambient": "freesound-weather-rain",
+      "ambient_volume": 68,
+      "govee_effect": {
+        "definition": {},
+        "ref": "club"
+      },
+      "id": "scene-1778343070940",
+      "name": "Emporium",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/7AjzPIuaOEx1pdHv459Lda?si=-FEW_bfrQFmnlgqhLmHfVQ",
+        "volume": 49
+      },
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "orange-burst"
+          },
+          "id": "trigger-1778344570108",
+          "name": "Explosion",
+          "sound": "freesound-guns and explosions-760509__samsterbirdies__astronomical-explosion"
+        },
+        {
+          "govee_flash": {
+            "ref": "white-burst"
+          },
+          "id": "trigger-1778344592089",
+          "name": "Shooting",
+          "sound": "freesound-guns and explosions-418431__craftyindividual__fnp90-burst"
+        }
+      ]
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "disian"
+      },
+      "id": "scene-1778343225749",
+      "name": "Ahab",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/7AjzPIuaOEx1pdHv459Lda?si=-FEW_bfrQFmnlgqhLmHfVQ",
+        "volume": 26
+      },
+      "triggers": []
+    },
+    {
+      "ambient": "freesound-weather-rain",
+      "ambient_volume": 95,
+      "govee_effect": {
+        "definition": {},
+        "ref": "police"
+      },
+      "id": "scene-1778343114658",
+      "name": "Police inspection",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/1ExPXsieweUMDoa7URGsNu?si=DOBZqJYqRmmg9PUmYQ53fg",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "flicker"
+      },
+      "id": "scene-1778343140289",
+      "name": "Docks",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/1ExPXsieweUMDoa7URGsNu?si=DOBZqJYqRmmg9PUmYQ53fg",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "disian"
+      },
+      "id": "scene-1778343183188",
+      "name": "Disians ",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    }
+  ],
+  "audio_manifest": {
+    "freesound-guns and explosions-418431__craftyindividual__fnp90-burst": {
+      "file": "freesound/guns and explosions/418431__craftyindividual__fnp90-burst.ogg",
+      "source_name": "418431__craftyindividual__fnp90-burst.ogg"
+    },
+    "freesound-guns and explosions-760509__samsterbirdies__astronomical-explosion": {
+      "file": "freesound/guns and explosions/760509__samsterbirdies__astronomical-explosion.ogg",
+      "source_name": "760509__samsterbirdies__astronomical-explosion.ogg"
+    },
+    "freesound-weather-233434__rocktopus__rain1": {
+      "duration_ms": 0,
+      "file": "freesound/weather/233434__rocktopus__rain1.ogg",
+      "source_name": "233434__rocktopus__rain1.ogg"
+    },
+    "freesound-weather-rain": {
+      "file": "freesound/weather/rain.ogg",
+      "source_name": "rain.ogg",
+      "duration_ms": 0
+    }
+  }
+}

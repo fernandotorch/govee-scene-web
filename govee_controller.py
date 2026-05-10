@@ -16,6 +16,7 @@ import sys
 import subprocess
 import hashlib
 import zipfile
+import tempfile
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
 # ── Network ───────────────────────────────────────────────────────────────────
@@ -294,7 +295,12 @@ def upload_sfx():
     file.save(temp_path)
     
     try:
-        subprocess.run(["ffmpeg", "-y", "-i", temp_path, "-c:a", "libvorbis", "-q:a", "4", output_path], check=True)
+        subprocess.run([
+            "ffmpeg", "-y", "-i", temp_path,
+            "-af", "loudnorm=I=-14:TP=-1:LRA=11",
+            "-c:a", "libvorbis", "-q:a", "4",
+            output_path
+        ], check=True)
         result = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", output_path], capture_output=True, text=True)
         duration_ms = int(float(result.stdout.strip()) * 1000)
     except Exception as e: return jsonify({"error": str(e)}), 500
@@ -330,7 +336,7 @@ def manage_session(name):
 def export_pack():
     try:
         data = request.json; pack_name = data.get("name", "New Session")
-        arc = data.get("arc", []); audio_manifest = data.get("audio_manifest", {})
+        scenes = data.get("scenes", []); audio_manifest = data.get("audio_manifest", {})
         safe_name = re.sub(r'[^\w\s\-]', '', pack_name).strip().replace(' ', '_')
         zip_filename = f"{safe_name}.zip"; zip_path = os.path.join(PACKS_DIR, zip_filename)
 
@@ -347,16 +353,30 @@ def export_pack():
                     continue
                 file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
                 if file_size_mb > 20:
-                    warnings.append(f'Too large ({file_size_mb:.0f} MB): {info["file"]} — convert to MP3 first')
+                    warnings.append(f'Too large ({file_size_mb:.0f} MB): {info["file"]} — convert to OGG first')
                     continue
                 base_id = re.sub(r'\.(ogg|wav|mp3|flac)$', '', audio_id, flags=re.IGNORECASE)
-                out_name = base_id + ext
-                z.write(audio_path, out_name)
-                info['file'] = out_name
+                if ext == '.ogg':
+                    z.write(audio_path, base_id + '.ogg')
+                    info['file'] = base_id + '.ogg'
+                else:
+                    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.ogg')
+                    os.close(tmp_fd)
+                    try:
+                        subprocess.run([
+                            'ffmpeg', '-y', '-i', audio_path,
+                            '-af', 'loudnorm=I=-14:TP=-1:LRA=11',
+                            '-c:a', 'libvorbis', '-q:a', '4',
+                            tmp_path
+                        ], check=True, capture_output=True)
+                        z.write(tmp_path, base_id + '.ogg')
+                        info['file'] = base_id + '.ogg'
+                    finally:
+                        os.unlink(tmp_path)
             session_json = {
                 'version': 1, 'name': pack_name,
                 'exported': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                'arc': arc, 'audio_manifest': audio_manifest
+                'scenes': scenes, 'audio_manifest': audio_manifest
             }
             z.writestr('session.json', json.dumps(session_json, indent=2))
 

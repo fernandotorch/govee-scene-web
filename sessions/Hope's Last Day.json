@@ -1,0 +1,66 @@
+{
+  "name": "Hope's Last Day",
+  "scenes": [
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "flicker"
+      },
+      "id": "scene-1778346170903",
+      "name": "Base",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "off"
+      },
+      "id": "scene-1778346223945",
+      "name": "Outside",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "alarm"
+      },
+      "id": "scene-1778346198405",
+      "name": "Landing pad",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "off"
+      },
+      "id": "scene-1778346246621",
+      "name": "Outside",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    }
+  ],
+  "audio_manifest": {}
+}

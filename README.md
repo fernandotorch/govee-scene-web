@@ -1,6 +1,6 @@
 # govee-scene-web
 
-Flask Studio for authoring TTRPG session packs for the [govee-scene](https://github.com/fernandotorch/govee-scene) Android app. Design full arcs — light effects, Spotify playlists, ambient loops, and trigger sounds — then export a ZIP the phone loads directly.
+Flask Studio for authoring TTRPG session packs for the [govee-scene](https://github.com/fernandotorch/govee-scene) Android app. Author session packs — light effects, Spotify playlists, ambient loops, and trigger sounds — then export a ZIP the phone loads directly.
 
 ## Setup
 
@@ -17,7 +17,7 @@ Set your SFX library path in Studio (gear icon) — this is the folder the file 
 
 ## Studio workflow
 
-### Building an arc
+### Building a session
 
 1. **Name** your session in the header
 2. **Add scenes** — each scene gets:
@@ -37,7 +37,7 @@ Set your SFX library path in Studio (gear icon) — this is the folder the file 
 
 ### Burst effects
 
-Light bursts (white, orange, purple) can be previewed from the Bursts panel — click fires a timed flash on the bar without interrupting the current ambient effect. Assign bursts to trigger buttons in the arc.
+Light bursts (white, orange, purple) can be previewed from the Bursts panel — click fires a timed flash on the bar without interrupting the current ambient effect. Assign bursts to trigger buttons in the session.
 
 ## How it works
 
@@ -57,10 +57,10 @@ Bursts use `ptReal` (not `colorwc`) so they work regardless of which effect is a
 ### Session pack export
 
 `POST /api/export` assembles a ZIP containing:
-- `session.json` — arc structure, audio manifest, version
-- Audio files referenced in the arc (flat naming, original format)
+- `session.json` — scenes list, audio manifest, version
+- Audio files referenced in the session (flat naming, original format)
 
-Only audio IDs actually used in the arc are included. Files over 20 MB are skipped with a warning.
+Only audio IDs actually used in the session are included. Files over 20 MB are skipped with a warning.
 
 ### Flask setup
 
