@@ -1,0 +1,77 @@
+{
+  "name": "Branches of Bone",
+  "scenes": [
+    {
+      "ambient": "freesound-weather-ship_waves",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "alarm"
+      },
+      "id": "scene-1778515040570",
+      "name": "Ship",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "alarm"
+      },
+      "id": "scene-1778515048493",
+      "name": "Land",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5",
+      "ambient_volume": 65,
+      "govee_effect": {
+        "definition": {},
+        "ref": "alarm"
+      },
+      "id": "scene-1778515058640",
+      "name": "St. Karotino",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "alarm"
+      },
+      "id": "scene-1778515068674",
+      "name": "Bone-Tree",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    }
+  ],
+  "audio_manifest": {
+    "freesound-weather-ship_waves": {
+      "file": "freesound/weather/ship_waves.ogg",
+      "source_name": "ship_waves.ogg",
+      "duration_ms": 0
+    },
+    "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5": {
+      "file": "sonniss-2026/Sonniss.com-GDC2026-GameAudioBundle1of5/344 Audio - Haunting Ambiences Vol. 5/FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5.wav",
+      "source_name": "FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5.wav",
+      "duration_ms": 0
+    }
+  }
+}

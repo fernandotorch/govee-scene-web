@@ -26,7 +26,7 @@ DISCOVERY_PORT = 4001
 LISTEN_PORT    = 4002
 CONTROL_PORT   = 4003
 
-_device_ip = None
+_device_ip = "YOUR_GOVEE_DEVICE_IP" # Hardcoded for stability
 _sock      = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def discover() -> str | None:
@@ -73,6 +73,7 @@ LEFT_MASK  = 0x01F   # bits 0-4
 RIGHT_MASK = 0x3E0   # bits 5-9
 
 def _seg_packet(r: int, g: int, b: int, mask: int) -> str:
+    r, g, b = max(0, min(255, int(r))), max(0, min(255, int(g))), max(0, min(255, int(b)))
     pkt = bytearray(20)
     pkt[0] = 0x33; pkt[1] = 0x05; pkt[2] = 0x15; pkt[3] = 0x01
     pkt[4], pkt[5], pkt[6] = r, g, b
@@ -149,6 +150,129 @@ def _alarm_loop():
         _seg_colors([(10, 2, 0, LEFT_MASK), (255, 55, 0, RIGHT_MASK)])
         _stop.wait(0.25)
 
+def _brave_sea_loop():
+    _on(); _bright(100); t = 0.0
+    while not _stop.is_set():
+        t += 0.6  
+        packet = []
+        crest_base = (t % 3.5) - 1.5
+        splash = (random.random() < 0.15)
+        for i in range(10):
+            mask = 1 << i
+            idx = i % 5
+            crest_pos = crest_base if i < 5 else ((t * 1.1 + 1.5) % 3.2) - 1.5
+            dist = abs(idx - crest_pos)
+            r, g, b = (0, 2, 30)
+            if dist < 1.0:
+                v = max(0.0, 1.0 - dist)
+                r = int(r + (200 - r) * v)
+                g = int(g + (240 - g) * v)
+                b = int(b + (255 - b) * v)
+            if splash and random.random() < 0.4: r, g, b = (230, 250, 255)
+            packet.append((r, g, b, mask))
+        
+        _seg_colors(packet) # Stable single packet
+        _stop.wait(0.12)
+
+def _torch_fire_loop():
+    _on(); _bright(100); t = 0.0
+    while not _stop.is_set():
+        t += 0.25
+        packet = []
+        wind = 0.8 * math.sin(t * 1.2) + 0.4 * math.sin(t * 2.8)
+        for h in range(5):
+            if h == 0:   br, bg, bb = (180, 15, 0)
+            elif h == 1: br, bg, bb = (220, 55, 0)
+            elif h == 2: br, bg, bb = (255, 120, 0)
+            elif h == 3: br, bg, bb = (255, 190, 40)
+            else:        br, bg, bb = (255, 240, 150)
+            for is_right in [False, True]:
+                mask = (1 << (h + 5)) if is_right else (1 << h)
+                bar_phase = 2.5 if is_right else 0.0
+                flicker = math.sin(t * 2.5 + bar_phase + h * 0.8)
+                sway = wind if is_right else -wind
+                if h >= 3:
+                    snap = 0.0 if ((is_right and wind < -0.5) or (not is_right and wind > 0.5)) else 1.0
+                    agitation = (flicker * 0.7 + 0.3) * snap
+                    intensity = agitation * (1.0 + abs(sway) * 0.5)
+                else:
+                    glow = (flicker * 0.3 + 0.7) 
+                    intensity = glow * (0.9 + abs(sway) * 0.1)
+                if h >= 2 and random.random() < 0.12: intensity *= random.uniform(1.3, 1.7)
+                r, g, b = int(br * intensity), int(bg * intensity), int(bb * intensity)
+                packet.append((r, g, b, mask))
+        
+        # Combined packet to prevent congestion
+        _seg_colors(packet)
+        _stop.wait(0.12)
+
+
+def _purple_evil_loop():
+    _on(); _bright(100); t = 0.0
+    while not _stop.is_set():
+        t += 0.3
+        packet = []
+        
+        # SLIGHTLY REDUCED TERROR CHANCE: 11% (was 15%)
+        if random.random() < 0.06:
+            roll = random.random()
+            
+            # Weights remain the same (Sequence-heavy)
+            if roll < 0.40:
+                _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
+                _stop.wait(random.uniform(0.3, 0.6))
+                if _stop.is_set(): break
+                _seg_colors([(255, 0, 0, LEFT_MASK | RIGHT_MASK)])
+                _stop.wait(random.uniform(0.2, 0.4))
+                continue
+            elif roll < 0.70:
+                _seg_colors([(255, 0, 0, LEFT_MASK | RIGHT_MASK)])
+                _stop.wait(random.uniform(0.15, 0.3))
+                if _stop.is_set(): break
+                _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
+                _stop.wait(random.uniform(0.4, 0.8))
+                continue
+            elif roll < 0.90:
+                _seg_colors([(255, 0, 0, LEFT_MASK | RIGHT_MASK)])
+                _stop.wait(random.uniform(0.2, 0.5))
+                continue
+            else:
+                _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
+                _stop.wait(random.uniform(0.3, 0.7))
+                continue
+
+        wind = 0.8 * math.sin(t * 1.2) + 0.4 * math.sin(t * 2.8)
+        
+        for h in range(5):
+            if h == 0:   br, bg, bb = (40, 0, 90)    # Deep Purple Base
+            elif h == 1: br, bg, bb = (100, 0, 200)  # Vibrant Purple
+            elif h == 2: br, bg, bb = (255, 0, 150)  # Neon Magenta
+            elif h == 3: br, bg, bb = (230, 230, 255) # Cold White
+            else:        br, bg, bb = (255, 10, 0)   # Crackling Red Top
+            
+            for is_right in [False, True]:
+                mask = (1 << (h + 5)) if is_right else (1 << h)
+                bar_phase = 2.5 if is_right else 0.0
+                flicker = math.sin(t * 2.5 + bar_phase + h * 0.8)
+                sway = wind if is_right else -wind
+                
+                if h >= 3:
+                    snap = 0.0 if ((is_right and wind < -0.5) or (not is_right and wind > 0.5)) else 1.0
+                    agitation = (flicker * 0.7 + 0.3) * snap
+                    intensity = agitation * (1.0 + abs(sway) * 0.5)
+                else:
+                    glow = (flicker * 0.3 + 0.7) 
+                    intensity = glow * (0.9 + abs(sway) * 0.1)
+                
+                if h >= 2 and random.random() < 0.12: intensity *= random.uniform(1.3, 1.7)
+                
+                r, g, b = int(br * intensity), int(bg * intensity), int(bb * intensity)
+                packet.append((r, g, b, mask))
+        
+        _seg_colors(packet)
+        _stop.wait(0.12)
+
+
 def _disian_loop():
     _on(); phase = 0.0
     while not _stop.is_set():
@@ -156,21 +280,25 @@ def _disian_loop():
         if random.random() < 0.015:
             _color(200, 210, 255); _bright(85); _stop.wait(random.uniform(0.04, 0.18))
         r = int(65 + v * 45); b = int(105 + v * 95)
-        _color(r, 0, b); _bright(int(22 + v * 58)); _stop.wait(0.05)
+        _color(r, 0, b); _bright(int(22 + v * 58)); _stop.wait(0.08)
 
 SCENES = {
-    "off": lambda: (_stop_all(), _off()),
-    "police": lambda: _run(_police_loop),
-    "club": lambda: _run(_club_loop),
-    "flicker": lambda: _run(_flicker_loop, 240, 230, 200),
-    "alarm": lambda: _run(_alarm_loop),
-    "disian": lambda: _run(_disian_loop),
+    'off': lambda: (_stop_all(), _off()),
+    'police': lambda: _run(_police_loop),
+    'club': lambda: _run(_club_loop),
+    'flicker': lambda: _run(_flicker_loop, 240, 230, 200),
+    'alarm': lambda: _run(_alarm_loop),
+    'brave-sea': lambda: _run(_brave_sea_loop),
+    'torch-fire': lambda: _run(_torch_fire_loop),
+    'evil': lambda: _run(_purple_evil_loop),
+    'disian': lambda: _run(_disian_loop),
 }
 
 BURST_DEFS = {
     'white-burst':  (255, 255, 255, 0.2),
     'orange-burst': (255, 100,   0, 0.3),
     'purple-pulse': (180,   0, 255, 0.3),
+    'fire-spark':   (255, 200, 50, 0.1),
 }
 
 _burst_timer = None
@@ -269,7 +397,6 @@ def get_sfx_tree():
     full_path = os.path.join(SFX_DIR, path)
     if not os.path.abspath(full_path).startswith(os.path.abspath(SFX_DIR)):
         return jsonify({"error": "unauthorized"}), 403
-    
     items = []
     for entry in os.scandir(full_path):
         items.append({
@@ -286,14 +413,11 @@ def upload_sfx():
     description = request.form.get("description", "sound"); source_name = file.filename
     dest_dir = os.path.join(SFX_DIR, category)
     os.makedirs(dest_dir, exist_ok=True)
-    
     audio_id = get_audio_id(category, description, source_name)
     output_filename = f"{audio_id}.ogg"
     output_path = os.path.join(dest_dir, output_filename)
-    
     temp_path = os.path.join(UPLOADS_DIR, source_name)
     file.save(temp_path)
-    
     try:
         subprocess.run([
             "ffmpeg", "-y", "-i", temp_path,
@@ -305,7 +429,6 @@ def upload_sfx():
         duration_ms = int(float(result.stdout.strip()) * 1000)
     except Exception as e: return jsonify({"error": str(e)}), 500
     finally: os.remove(temp_path)
-    
     return jsonify({"audio_id": audio_id, "filename": output_filename, "duration_ms": duration_ms, "rel_path": os.path.relpath(output_path, SFX_DIR)})
 
 @app.route("/api/sfx/file/<path:filename>")
@@ -339,7 +462,6 @@ def export_pack():
         scenes = data.get("scenes", []); audio_manifest = data.get("audio_manifest", {})
         safe_name = re.sub(r'[^\w\s\-]', '', pack_name).strip().replace(' ', '_')
         zip_filename = f"{safe_name}.zip"; zip_path = os.path.join(PACKS_DIR, zip_filename)
-
         warnings = []
         with zipfile.ZipFile(zip_path, 'w') as z:
             for audio_id, info in audio_manifest.items():
@@ -379,7 +501,6 @@ def export_pack():
                 'scenes': scenes, 'audio_manifest': audio_manifest
             }
             z.writestr('session.json', json.dumps(session_json, indent=2))
-
         return jsonify({"url": f"/api/packs/{zip_filename}", "warnings": warnings})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -397,7 +518,7 @@ def list_packs():
 if __name__ == "__main__":
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         print("Discovering Govee H6047...")
-        _device_ip = discover()
+        # pass # _device_ip = discover() # Hardcoded above
         if _device_ip: print(f"Device found at {_device_ip}")
         try:
             local_ip = subprocess.check_output(["hostname", "-I"], text=True).split()[0]

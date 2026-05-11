@@ -34,6 +34,9 @@
   .club    { background: linear-gradient(120deg, #cc006e 0%, #00cc66 100%); color: #fff; }
   .flicker { background: #3a3020; color: #d4c080; }
   .alarm   { background: #7a2800; color: #ffaa44; }
+  .boat    { background: linear-gradient(120deg, #00021e 0%, #001e3c 100%); color: #63b8de; }
+  .torches { background: #3a1000; color: #ffaa44; border: 1px solid #7a2800; }
+  .evil    { background: linear-gradient(120deg, #330055 0%, #660099 100%); color: #ff00ff; }
   .disian  { background: linear-gradient(120deg, #1a0033 0%, #330055 100%); color: #ccaaff; }
   #status  { margin-top: 24px; font-size: 0.8em; color: #555; text-align: center; }
 </style>
@@ -64,6 +67,21 @@
 <button class="btn alarm" onclick="scene('alarm')">
   Emergency Alarm
   <small>Orange rotating beacon</small>
+</button>
+
+<button class="btn boat" onclick="scene('brave-sea')">
+  Brave Sea
+  <small>Intense rolling waves and crashing foam</small>
+</button>
+
+<button class="btn torches" onclick="scene('torch-fire')">
+  Torch Fire
+  <small>Independent fire flickers</small>
+</button>
+
+<button class="btn evil" onclick="scene('evil')">
+  Torch Fire Evil
+  <small>Malevolent purple flames</small>
 </button>
 
 <button class="btn disian" onclick="scene('disian')">
