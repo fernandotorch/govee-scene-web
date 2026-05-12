@@ -120,7 +120,7 @@
   <button class="tool" onclick="newSession()">New</button>
   <button class="tool" onclick="openSessionList()">Open</button>
   <button class="tool" onclick="saveSession()">Save</button>
-  <span id="sync-status" style="font-size:0.8em; color:#555; margin-left:8px;"></span>
+  <span id="sync-status" style="font-size:0.8em; color:#555; margin-left:8px;"></span><div id="sync-progress-container" style="display:none; width:100px; height:4px; background:#eee; margin-left:8px; vertical-align:middle;"><div id="sync-progress-bar" style="width:0%; height:100%; background:#4a9; transition:width 0.3s;"></div></div>
 </div>
 
 <div id="main-layout">
@@ -362,17 +362,42 @@ async function saveSession() {
     sessionName = n;
     document.getElementById('session-name-input').value = sessionName;
   }
-  await fetch('/api/sessions/' + sessionName, {
+  const res = await fetch('/api/sessions/' + sessionName, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: sessionName, scenes, audio_manifest: library })
   });
+  if (!res.ok) {
+    const data = await res.json();
+    alert('Save failed: ' + (data.error || res.status));
+    return;
+  }
   _dirty = false;
   _syncPack();
 }
 
 async function _syncPack() {
   const el = document.getElementById('sync-status');
+  const progContainer = document.getElementById('sync-progress-container');
+  const progBar = document.getElementById('sync-progress-bar');
+  
   el.textContent = 'Syncing…'; el.style.color = '#888';
+  progContainer.style.display = 'inline-block';
+  progBar.style.width = '0%';
+
+  const pollInterval = setInterval(async () => {
+    try {
+      const pRes = await fetch('/api/export/status');
+      const pData = await pRes.json();
+      if (pData.status === 'busy' && pData.total > 0) {
+        const fileProgress = (pData.file_percent || 0) / 100;
+        const totalProgress = (pData.current - 1 + fileProgress) / pData.total;
+        const percent = Math.round(totalProgress * 100);
+        progBar.style.width = percent + '%';
+        el.textContent = 'Syncing (' + pData.current + '/' + pData.total + ') ' + (pData.file_percent || 0) + '%...';
+      }
+    } catch (e) { clearInterval(pollInterval); progContainer.style.display = "none";}
+  }, 1000);
+
   try {
     const usedIds = new Set();
     for (const scene of scenes) {
@@ -383,25 +408,36 @@ async function _syncPack() {
     }
     const usedLibrary = {};
     for (const id of usedIds) { if (library[id]) usedLibrary[id] = library[id]; }
-    const res = await fetch('/api/export', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: sessionName, scenes, audio_manifest: usedLibrary })
-    });
-    const data = await res.json();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout
+    let res, data;
+    try {
+      res = await fetch('/api/export', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: sessionName, scenes, audio_manifest: usedLibrary }),
+        signal: controller.signal
+      });
+      data = await res.json();
+    } finally {
+      clearTimeout(timeoutId); clearInterval(pollInterval); progContainer.style.display = "none";
+    }
+    if (data.audio_manifest) {
+      Object.assign(library, data.audio_manifest);
+      renderEditor();
+    }
     if (!res.ok) {
       el.textContent = 'Sync failed: ' + (data.error || res.status);
       el.style.color = '#e05';
       return;
     }
+    el.textContent = 'Ready for phone ✓'; el.style.color = '#4a9';
     if (data.warnings && data.warnings.length) {
       const extra = data.warnings.length > 1 ? ` (+${data.warnings.length - 1} more)` : '';
-      el.textContent = '⚠ ' + data.warnings[0] + extra;
+      el.textContent += ' (⚠ ' + data.warnings[0] + extra + ')';
       el.style.color = '#f90';
-    } else {
-      el.textContent = 'Ready for phone ✓'; el.style.color = '#4a9';
-      setTimeout(() => { if (el.textContent.startsWith('Ready')) el.textContent = ''; }, 4000);
     }
-  } catch (e) {
+    setTimeout(() => { if (el.textContent.startsWith('Ready')) el.textContent = ''; }, 8000);
+  } catch (e) { clearInterval(pollInterval); progContainer.style.display = "none";
     console.error('Sync error:', e);
     el.textContent = 'Sync error: ' + e.message;
     el.style.color = '#e05';

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-govee_controller.py — TTRPG session lighting controller + Studio Backend
+govee_controller.py - TTRPG session lighting controller + Studio Backend
 """
 
 import base64
+import copy
 import socket
 import json
 import re
@@ -60,6 +61,8 @@ def _send(cmd: dict):
         _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         _sock.sendto(msg, (_device_ip, CONTROL_PORT))
 
+_export_progress = {"status": "idle", "current": 0, "total": 0, "file": "", "file_percent": 0}
+
 # ── Primitives ────────────────────────────────────────────────────────────────
 
 def _on():           _send({"cmd": "turn",       "data": {"value": 1}})
@@ -87,13 +90,21 @@ def _seg_colors(groups: list[tuple[int, int, int, int]]):
 
 # ── Animation engine ──────────────────────────────────────────────────────────
 
-_stop   = threading.Event()
-_thread = None
+
+_stop        = threading.Event()
+_thread      = None
+_session_id  = 0
+_burst_timer = None
+_burst_gen   = 0
 
 def _stop_all():
-    global _thread
+    global _thread, _session_id, _burst_timer
+    _session_id += 1
     _stop.set()
-    if _thread and _thread.is_alive(): _thread.join(timeout=2)
+    if _thread and _thread.is_alive(): _thread.join(timeout=1.0)
+    if _burst_timer: 
+        _burst_timer.cancel()
+        _burst_timer = None
     _stop.clear()
 
 def _run(fn, *args):
@@ -106,7 +117,8 @@ def _run(fn, *args):
 
 def _police_loop():
     _on(); _bright(100)
-    while not _stop.is_set():
+    session = _session_id
+    while not _stop.is_set() and _session_id == session:
         _seg_colors([(255, 0, 0, LEFT_MASK), (0, 40, 255, RIGHT_MASK)])
         _stop.wait(0.25)
         _seg_colors([(0, 40, 255, LEFT_MASK), (255, 0, 0, RIGHT_MASK)])
@@ -115,7 +127,8 @@ def _police_loop():
 def _club_loop():
     PINK = (255, 0, 180); GREEN = (0, 255, 80); COLORS = [PINK, GREEN]
     PULSE_HZ = 2.0; TICK = 0.15; _on(); t0 = time.time()
-    while not _stop.is_set():
+    session = _session_id
+    while not _stop.is_set() and _session_id == session:
         now = time.time()
         l_color = random.choice(COLORS); r_color = PINK if l_color is GREEN else GREEN
         v = (math.sin(2 * math.pi * PULSE_HZ * (now - t0)) + 1) / 2
@@ -128,13 +141,14 @@ def _club_loop():
 def _flicker_loop(r, g, b):
     _on(); _seg_colors([(r, g, b, LEFT_MASK), (r, g, b, RIGHT_MASK)])
     def bar_loop(mask):
-        while not _stop.is_set():
+        session = _session_id
+        while not _stop.is_set() and _session_id == session:
             _seg_colors([(r, g, b, mask)]); _stop.wait(random.uniform(5.0, 10.0))
-            if _stop.is_set(): break
+            if _stop.is_set() or _session_id != session: break
             cut = random.uniform(0.6, 1.0)
-            while cut > 0.05 and not _stop.is_set():
+            while cut > 0.05 and not _stop.is_set() and _session_id == session:
                 _seg_colors([(2, 2, 2, mask)]); _stop.wait(cut)
-                if _stop.is_set(): break
+                if _stop.is_set() or _session_id != session: break
                 _seg_colors([(r, g, b, mask)]); _stop.wait(cut * random.uniform(0.2, 0.4))
                 cut *= random.uniform(0.35, 0.55)
             if not _stop.is_set(): _seg_colors([(r, g, b, mask)])
@@ -144,7 +158,8 @@ def _flicker_loop(r, g, b):
 
 def _alarm_loop():
     _on(); _bright(100)
-    while not _stop.is_set():
+    session = _session_id
+    while not _stop.is_set() and _session_id == session:
         _seg_colors([(255, 55, 0, LEFT_MASK), (10, 2, 0, RIGHT_MASK)])
         _stop.wait(0.25)
         _seg_colors([(10, 2, 0, LEFT_MASK), (255, 55, 0, RIGHT_MASK)])
@@ -152,7 +167,8 @@ def _alarm_loop():
 
 def _brave_sea_loop():
     _on(); _bright(100); t = 0.0
-    while not _stop.is_set():
+    session = _session_id
+    while not _stop.is_set() and _session_id == session:
         t += 0.6  
         packet = []
         crest_base = (t % 3.5) - 1.5
@@ -176,7 +192,8 @@ def _brave_sea_loop():
 
 def _torch_fire_loop():
     _on(); _bright(100); t = 0.0
-    while not _stop.is_set():
+    session = _session_id
+    while not _stop.is_set() and _session_id == session:
         t += 0.25
         packet = []
         wind = 0.8 * math.sin(t * 1.2) + 0.4 * math.sin(t * 2.8)
@@ -209,7 +226,8 @@ def _torch_fire_loop():
 
 def _purple_evil_loop():
     _on(); _bright(100); t = 0.0
-    while not _stop.is_set():
+    session = _session_id
+    while not _stop.is_set() and _session_id == session:
         t += 0.3
         packet = []
         
@@ -221,14 +239,14 @@ def _purple_evil_loop():
             if roll < 0.40:
                 _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
                 _stop.wait(random.uniform(0.3, 0.6))
-                if _stop.is_set(): break
+                if _stop.is_set() or _session_id != session: break
                 _seg_colors([(255, 0, 0, LEFT_MASK | RIGHT_MASK)])
                 _stop.wait(random.uniform(0.2, 0.4))
                 continue
             elif roll < 0.70:
                 _seg_colors([(255, 0, 0, LEFT_MASK | RIGHT_MASK)])
                 _stop.wait(random.uniform(0.15, 0.3))
-                if _stop.is_set(): break
+                if _stop.is_set() or _session_id != session: break
                 _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
                 _stop.wait(random.uniform(0.4, 0.8))
                 continue
@@ -275,7 +293,8 @@ def _purple_evil_loop():
 
 def _disian_loop():
     _on(); phase = 0.0
-    while not _stop.is_set():
+    session = _session_id
+    while not _stop.is_set() and _session_id == session:
         phase += 0.04; v = (math.sin(phase) + 1) / 2
         if random.random() < 0.015:
             _color(200, 210, 255); _bright(85); _stop.wait(random.uniform(0.04, 0.18))
@@ -301,8 +320,6 @@ BURST_DEFS = {
     'fire-spark':   (255, 200, 50, 0.1),
 }
 
-_burst_timer = None
-_burst_gen   = 0
 
 def _burst_end():
     _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
@@ -425,9 +442,11 @@ def upload_sfx():
             "-c:a", "libvorbis", "-q:a", "4",
             output_path
         ], check=True)
-        result = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", output_path], capture_output=True, text=True)
+        result = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", output_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True)
         duration_ms = int(float(result.stdout.strip()) * 1000)
-    except Exception as e: return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        _export_progress = {"status": "idle", "current": 0, "total": 0, "file": "", "file_percent": 0}
+        return jsonify({"error": str(e)}), 500
     finally: os.remove(temp_path)
     return jsonify({"audio_id": audio_id, "filename": output_filename, "duration_ms": duration_ms, "rel_path": os.path.relpath(output_path, SFX_DIR)})
 
@@ -455,54 +474,150 @@ def manage_session(name):
     if not os.path.exists(path): return jsonify({"error": "not found"}), 404
     with open(path, "r") as f: return jsonify(json.load(f))
 
+@app.route("/api/export/status")
+def export_status(): return jsonify(_export_progress)
+
+def _get_duration(path):
+    try:
+        res = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', path], capture_output=True, text=True)
+        return float(res.stdout.strip())
+    except: return 0
+
+def _run_ffmpeg_with_progress(in_path, out_path, duration):
+    global _export_progress
+    cmd = [
+        'ffmpeg', '-y', '-progress', 'pipe:1', '-i', in_path,
+        '-af', 'loudnorm=I=-14:TP=-1:LRA=11',
+        '-c:a', 'libvorbis', '-q:a', '4',
+        out_path
+    ]
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    while True:
+        line = process.stdout.readline()
+        if not line: break
+        if 'out_time_ms=' in line:
+            try:
+                ms = int(line.split('=')[1].strip())
+                if duration > 0:
+                    _export_progress['file_percent'] = min(100, int((ms / 1000000) / duration * 100))
+            except: pass
+    process.wait()
+
 @app.route("/api/export", methods=["POST"])
 def export_pack():
+    global _export_progress
     try:
         data = request.json; pack_name = data.get("name", "New Session")
         scenes = data.get("scenes", []); audio_manifest = data.get("audio_manifest", {})
+        _export_progress = {"status": "busy", "current": 0, "total": len(audio_manifest), "file": ""}
         safe_name = re.sub(r'[^\w\s\-]', '', pack_name).strip().replace(' ', '_')
         zip_filename = f"{safe_name}.zip"; zip_path = os.path.join(PACKS_DIR, zip_filename)
         warnings = []
-        with zipfile.ZipFile(zip_path, 'w') as z:
-            for audio_id, info in audio_manifest.items():
+        # Work on a copy of audio_manifest for the ZIP to avoid flattening the disk session
+        zip_manifest = copy.deepcopy(audio_manifest)
+        with zipfile.ZipFile(zip_path, 'w', allowZip64=True) as z:
+            for i, (audio_id, info) in enumerate(zip_manifest.items()):
+                _export_progress["current"] = i + 1
+                _export_progress["file"] = info.get("file", audio_id)
                 audio_path = os.path.join(SFX_DIR, info['file'])
                 if not os.path.exists(audio_path):
-                    warnings.append(f'Missing: {info["file"]}')
-                    continue
+                    # Ultra Deep Auto-recover: search by file, source_name, or audio_id
+                    search_targets = set()
+                    search_targets.add(audio_id)
+                    for ext in ['.ogg', '.wav', '.mp3', '.flac']:
+                        search_targets.add(audio_id + ext)
+                    for k in ['file', 'source_name']:
+                        if info.get(k):
+                            base = os.path.basename(info[k])
+                            search_targets.add(base)
+                            search_targets.add(re.sub(r'\.(ogg|wav|mp3|flac)$', '.ogg', base, flags=re.IGNORECASE))
+                    print(f'Attempting recovery for {audio_id}. Targets: {search_targets}')
+                    
+                    found_path = None
+                    for root, _, files in os.walk(SFX_DIR):
+                        for f in files:
+                            if f in search_targets:
+                                found_path = os.path.join(root, f)
+                                break
+                        if found_path: break
+                    
+                    if found_path:
+                        print(f'Recovered {info.get("file")} -> {found_path}')
+                        audio_path = found_path
+                        ext = '.ogg' if found_path.endswith('.ogg') else os.path.splitext(found_path)[1].lower()
+                        new_rel = os.path.relpath(found_path, SFX_DIR)
+                        new_base = os.path.basename(found_path)
+                        info['file'] = new_rel
+                        info['source_name'] = new_base
+                        # Persist to disk manifest
+                        if audio_id in audio_manifest:
+                            audio_manifest[audio_id]['file'] = new_rel
+                            audio_manifest[audio_id]['source_name'] = new_base
+                    else:
+                        warnings.append(f'Missing: {info["file"]}')
+                        continue
                 ext = os.path.splitext(audio_path)[1].lower()
                 if ext not in ['.ogg', '.wav', '.mp3', '.flac']:
                     warnings.append(f'Unsupported format: {info["file"]}')
                     continue
                 file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
                 if file_size_mb > 20:
-                    warnings.append(f'Too large ({file_size_mb:.0f} MB): {info["file"]} — convert to OGG first')
-                    continue
+                    if ext == ".ogg":
+                        warnings.append(f"Large OGG ({file_size_mb:.0f} MB): {info['file']} - consider shorter loop")
+
                 base_id = re.sub(r'\.(ogg|wav|mp3|flac)$', '', audio_id, flags=re.IGNORECASE)
                 if ext == '.ogg':
+                    _export_progress['file_percent'] = 100
                     z.write(audio_path, base_id + '.ogg')
                     info['file'] = base_id + '.ogg'
                 else:
-                    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.ogg')
-                    os.close(tmp_fd)
+                    # Permanent in-place conversion
+                    final_ogg_path = os.path.join(os.path.dirname(audio_path), base_id + '.ogg')
                     try:
-                        subprocess.run([
-                            'ffmpeg', '-y', '-i', audio_path,
-                            '-af', 'loudnorm=I=-14:TP=-1:LRA=11',
-                            '-c:a', 'libvorbis', '-q:a', '4',
-                            tmp_path
-                        ], check=True, capture_output=True)
-                        z.write(tmp_path, base_id + '.ogg')
-                        info['file'] = base_id + '.ogg'
-                    finally:
-                        os.unlink(tmp_path)
+                        duration = _get_duration(audio_path)
+                        _run_ffmpeg_with_progress(audio_path, final_ogg_path, duration)
+                        
+                        # Verify conversion and cleanup original
+                        if os.path.exists(final_ogg_path):
+                            os.remove(audio_path)
+                            info['file'] = base_id + '.ogg'
+                            info['source_name'] = base_id + '.ogg'
+                            # Persist to disk manifest
+                            if audio_id in audio_manifest:
+                                audio_manifest[audio_id]['file'] = base_id + '.ogg'
+                                audio_manifest[audio_id]['source_name'] = base_id + '.ogg'
+                            z.write(final_ogg_path, base_id + '.ogg')
+                            new_size_mb = os.path.getsize(final_ogg_path) / (1024 * 1024)
+                            if new_size_mb > 20:
+                                warnings.append(f"Still large after conversion ({new_size_mb:.0f} MB): {info['file']}")
+                        else:
+                            warnings.append(f"Conversion failed: {info['file']}")
+                    except Exception as e:
+                        warnings.append(f"Conversion error {info['file']}: {str(e)}")
             session_json = {
                 'version': 1, 'name': pack_name,
                 'exported': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                'scenes': scenes, 'audio_manifest': audio_manifest
+                'scenes': scenes, 'audio_manifest': zip_manifest
             }
+            
             z.writestr('session.json', json.dumps(session_json, indent=2))
-        return jsonify({"url": f"/api/packs/{zip_filename}", "warnings": warnings})
+        
+        # Update the session file on disk if it exists (Merge manifest)
+        session_path = os.path.join(SESSIONS_DIR, pack_name + '.json')
+        if os.path.exists(session_path):
+            try:
+                with open(session_path, 'r') as f:
+                    disk_session = json.load(f)
+                if 'audio_manifest' not in disk_session: disk_session['audio_manifest'] = {}
+                disk_session['audio_manifest'].update(audio_manifest)
+                with open(session_path, 'w') as f:
+                    json.dump(disk_session, f, indent=2)
+            except: pass
+
+        _export_progress = {"status": "idle", "current": 0, "total": 0, "file": "", "file_percent": 0}
+        return jsonify({"url": f"/api/packs/{zip_filename}", "warnings": warnings, "audio_manifest": audio_manifest})
     except Exception as e:
+        _export_progress = {"status": "idle", "current": 0, "total": 0, "file": "", "file_percent": 0}
         return jsonify({'error': str(e)}), 500
 
 @app.route("/api/packs/<filename>")
@@ -515,13 +630,15 @@ def list_packs():
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-if __name__ == "__main__":
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        print("Discovering Govee H6047...")
-        # pass # _device_ip = discover() # Hardcoded above
-        if _device_ip: print(f"Device found at {_device_ip}")
-        try:
-            local_ip = subprocess.check_output(["hostname", "-I"], text=True).split()[0]
-        except Exception: local_ip = "localhost"
-        print(f"\n{'─' * 40}\n  Lighting Lab: http://{local_ip}:5000\n  Studio:       http://{local_ip}:5000/studio\n{'─' * 40}\n")
-    app.run(host="0.0.0.0", port=5000, use_reloader=True, threaded=True)
+if __name__ == '__main__':
+    print('SFX_DIR:', SFX_DIR)
+    print('Discovering Govee H6047...')
+    if _device_ip: print('Device found at', _device_ip)
+    try:
+        local_ip = subprocess.check_output(['hostname', '-I'], text=True).split()[0]
+    except Exception: local_ip = 'localhost'
+    print('\n' + ('─' * 40))
+    print('  Lighting Lab: http://' + local_ip + ':5000')
+    print('  Studio:       http://' + local_ip + ':5000/studio')
+    print(('─' * 40) + '\n')
+    app.run(host='0.0.0.0', port=5000, use_reloader=False, threaded=True)

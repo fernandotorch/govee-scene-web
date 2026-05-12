@@ -29,9 +29,11 @@ Replace it with:
                     warnings.append(f'Unsupported format: {info["file"]}')
                     continue
                 file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
-                if file_size_mb > 20:
-                    warnings.append(f'Too large ({file_size_mb:.0f} MB): {info["file"]} — convert to OGG first')
-                    continue
+                if ext == ".ogg" and file_size_mb > 20:
+                    warnings.append(f"Large OGG ({file_size_mb:.0f} MB): {info['file']} — consider shorter loop")
+                elif ext != ".ogg" and file_size_mb > 100:
+                    warnings.append(f"Large {ext[1:].upper()} ({file_size_mb:.0f} MB): {info['file']} — converting to OGG...")
+                
                 base_id = re.sub(r'\.(ogg|wav|mp3|flac)$', '', audio_id, flags=re.IGNORECASE)
                 if ext == '.ogg':
                     z.write(audio_path, base_id + '.ogg')
@@ -40,14 +42,17 @@ Replace it with:
                     tmp_fd, tmp_path = tempfile.mkstemp(suffix='.ogg')
                     os.close(tmp_fd)
                     try:
-                        subprocess.run([
-                            'ffmpeg', '-y', '-i', audio_path,
-                            '-af', 'loudnorm=I=-14:TP=-1:LRA=11',
-                            '-c:a', 'libvorbis', '-q:a', '4',
+                                                subprocess.run([
+                            "ffmpeg", "-y", "-i", audio_path,
+                            "-af", "loudnorm=I=-14:TP=-1:LRA=11",
+                            "-c:a", "libvorbis", "-q:a", "4",
                             tmp_path
                         ], check=True, capture_output=True)
-                        z.write(tmp_path, base_id + '.ogg')
-                        info['file'] = base_id + '.ogg'
+                        new_size_mb = os.path.getsize(tmp_path) / (1024 * 1024)
+                        if new_size_mb > 20:
+                            warnings.append(f"Still large after conversion ({new_size_mb:.0f} MB): {info['file']}")
+                        z.write(tmp_path, base_id + ".ogg")
+                        info["file"] = base_id + ".ogg" 
                     finally:
                         os.unlink(tmp_path)
 ```

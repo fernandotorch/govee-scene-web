@@ -6,72 +6,122 @@
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "alarm"
+        "ref": "brave-sea"
       },
       "id": "scene-1778515040570",
       "name": "Ship",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/playlist/2p22cxznUP9prBiY1ude5b",
         "volume": 50
       },
       "triggers": []
     },
     {
-      "ambient": null,
+      "ambient": "freesound-weather-weather-crickets",
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "alarm"
+        "ref": "brave-sea"
       },
       "id": "scene-1778515048493",
       "name": "Land",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/playlist/46hRzPrsY0K2mAahUmcEiA",
         "volume": 50
       },
       "triggers": []
     },
     {
-      "ambient": "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5",
+      "ambient": "freesound-fire-intense_fire_crackling",
       "ambient_volume": 65,
       "govee_effect": {
         "definition": {},
-        "ref": "alarm"
+        "ref": "torch-fire"
       },
       "id": "scene-1778515058640",
       "name": "St. Karotino",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/playlist/46hRzPrsY0K2mAahUmcEiA",
         "volume": 50
       },
       "triggers": []
     },
     {
-      "ambient": null,
+      "ambient": "freesound-fire-fire-dark",
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "alarm"
+        "ref": "evil"
       },
       "id": "scene-1778515068674",
       "name": "Bone-Tree",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/playlist/1wguPuaStbEE2RV1H7OrQ7",
         "volume": 50
       },
       "triggers": []
     }
   ],
   "audio_manifest": {
-    "freesound-weather-ship_waves": {
-      "file": "freesound/weather/ship_waves.ogg",
-      "source_name": "ship_waves.ogg",
+    "freesound-fire-fire-dark": {
+      "file": "freesound/fire/fire-dark.ogg",
+      "source_name": "fire-dark.ogg",
       "duration_ms": 0
     },
-    "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5": {
-      "file": "sonniss-2026/Sonniss.com-GDC2026-GameAudioBundle1of5/344 Audio - Haunting Ambiences Vol. 5/FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5.wav",
-      "source_name": "FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5.wav",
+    "freesound-fire-fire_crackling": {
+      "duration_ms": 0,
+      "file": "freesound/fire/freesound-fire-fire_crackling.ogg",
+      "source_name": "freesound-fire-fire_crackling.ogg"
+    },
+    "freesound-fire-fireplace_rumble": {
+      "duration_ms": 0,
+      "file": "freesound/fire/freesound-fire-fireplace_rumble.ogg",
+      "source_name": "freesound-fire-fireplace_rumble.ogg"
+    },
+    "freesound-fire-intense_fire_crackling": {
+      "duration_ms": 0,
+      "file": "freesound/fire/intense_fire_crackling.ogg",
+      "source_name": "intense_fire_crackling.ogg"
+    },
+    "freesound-weather-crickets": {
+      "duration_ms": 0,
+      "file": "freesound/weather/freesound-weather-crickets.ogg",
+      "source_name": "freesound-weather-crickets.ogg"
+    },
+    "freesound-weather-freesound-weather-crickets": {
+      "duration_ms": 0,
+      "file": "freesound/weather/freesound-weather-crickets.ogg",
+      "source_name": "freesound-weather-crickets.ogg"
+    },
+    "freesound-weather-ship_waves": {
+      "duration_ms": 0,
+      "file": "freesound/weather/ship_waves.ogg",
+      "source_name": "ship_waves.ogg"
+    },
+    "freesound-weather-weather-crickets": {
+      "duration_ms": 0,
+      "file": "freesound/weather/weather-crickets.ogg",
+      "source_name": "weather-crickets.ogg"
+    },
+    "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - East Coast America Vol. 1-AMBSubn_Ambience, Forest Crickets, Birds, Connecticut 02_344 Audio_East Coast America": {
+      "duration_ms": 0,
+      "file": "sonniss-2026/Sonniss.com-GDC2026-GameAudioBundle1of5/344 Audio - East Coast America Vol. 1/sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - East Coast America Vol. 1-AMBSubn_Ambience, Forest Crickets, Birds, Connecticut 02_344 Audio_East Coast America.ogg",
+      "source_name": "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - East Coast America Vol. 1-AMBSubn_Ambience, Forest Crickets, Birds, Connecticut 02_344 Audio_East Coast America.ogg"
+    },
+    "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5": {
+      "duration_ms": 0,
+      "file": "sonniss-2026/Sonniss.com-GDC2026-GameAudioBundle1of5/344 Audio - Haunting Ambiences Vol. 5/sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5.ogg",
+      "source_name": "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5.ogg"
+    },
+    "freesound-voices-conspiracy_voices": {
+      "file": "freesound/voices/conspiracy_voices.wav",
+      "source_name": "conspiracy_voices.wav",
       "duration_ms": 0
+    },
+    "freesound-voices-fire_conspiracy": {
+      "duration_ms": 0,
+      "file": "freesound/voices/fire_conspiracy.ogg",
+      "source_name": "fire_conspiracy.ogg"
     }
   }
 }
