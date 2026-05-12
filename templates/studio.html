@@ -568,7 +568,16 @@ function renderEditor() {
            <button class="icon" style="flex-shrink:0;margin-left:8px;" onclick="updateScene('spotify',{uri:'',volume:50});renderEditor();">×</button>`
         : `<span style="color:#555;">Drop playlist here</span>`}
     </div>
-    ${scene.spotify.uri ? `<input type="range" min="0" max="100" value="${scene.spotify.volume}" title="Spotify volume" style="margin-top:2px;" onchange="updateScene('spotify',{...scenes[activeSceneIndex].spotify,volume:parseInt(this.value)})">` : ''}
+        ${scene.spotify.uri ? `
+      <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+        <input type="range" min="0" max="100" value="${scene.spotify.volume}" title="Spotify volume" style="flex:1;" onchange="updateScene('spotify',{...scenes[activeSceneIndex].spotify,volume:parseInt(this.value)})">
+        <div style="display:flex; align-items:center; background:#222; border-radius:4px; padding:0 6px; height:24px; border:1px solid var(--border);">
+           <span style="font-size:10px; color:#666; margin-right:4px;">START</span>
+           <input type="number" min="0" value="${scene.spotify.start_time || 0}" style="width:35px; background:none; border:none; color:#ccc; font-size:11px; padding:0;" onchange="updateScene('spotify',{...scenes[activeSceneIndex].spotify,start_time:parseInt(this.value) || 0})">
+           <span style="font-size:10px; color:#666; margin-left:2px;">s</span>
+        </div>
+      </div>
+    ` : ''}
 
     <hr class="divider">
     <div class="section-title">Triggers</div>
