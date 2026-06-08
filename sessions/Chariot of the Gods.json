@@ -5,8 +5,8 @@
       "ambient": "freesound-space-spaceship",
       "ambient_volume": 50,
       "govee_effect": {
-        "definition": {},
-        "ref": "flicker-slow"
+        "ref": "flicker-slow",
+        "definition": {}
       },
       "id": "scene-1780922195782",
       "name": "Montero",
@@ -30,14 +30,6 @@
         "volume": 50
       },
       "triggers": [
-        {
-          "govee_flash": {
-            "ref": "smg-burst"
-          },
-          "id": "trigger-1780931754723",
-          "name": "auto-fire",
-          "sound": "freesound-guns and explosions-autofire"
-        },
         {
           "govee_flash": {
             "ref": "smg-burst"
@@ -169,7 +161,7 @@
       ]
     },
     {
-      "ambient": "freesound-space-spaceship_alarm.aiff",
+      "ambient": "freesound-space-freesound-space-spaceship_alarm_pause",
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
@@ -238,6 +230,11 @@
       "file": "freesound/guns and explosions/pulse_rifle.ogg",
       "source_name": "pulse_rifle.ogg"
     },
+    "freesound-space-freesound-space-spaceship_alarm": {
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship_alarm.ogg",
+      "source_name": "freesound-space-spaceship_alarm.ogg"
+    },
     "freesound-space-spaceship": {
       "duration_ms": 0,
       "file": "freesound/space/freesound-space-spaceship.ogg",
@@ -252,6 +249,11 @@
       "duration_ms": 0,
       "file": "freesound/space/freesound-space-spaceship_quiet.ogg",
       "source_name": "freesound-space-spaceship_quiet.ogg"
+    },
+    "freesound-space-freesound-space-spaceship_alarm_pause": {
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship_alarm_pause.ogg",
+      "source_name": "freesound-space-spaceship_alarm_pause.ogg"
     }
   }
 }
