@@ -47,7 +47,7 @@
       "triggers": []
     },
     {
-      "ambient": "freesound-fire-fire-dark",
+      "ambient": "freesound-voices-fire_conspiracy",
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
@@ -56,9 +56,9 @@
       "id": "scene-1778515068674",
       "name": "Bone-Tree",
       "spotify": {
+        "start_time": 22,
         "uri": "https://open.spotify.com/playlist/1wguPuaStbEE2RV1H7OrQ7",
-        "volume": 50,
-        "start_time": 22
+        "volume": 50
       },
       "triggers": []
     }
@@ -90,9 +90,9 @@
       "source_name": "conspiracy_voices.wav"
     },
     "freesound-voices-fire_conspiracy": {
-      "duration_ms": 0,
       "file": "freesound/voices/fire_conspiracy.ogg",
-      "source_name": "fire_conspiracy.ogg"
+      "source_name": "fire_conspiracy.ogg",
+      "duration_ms": 0
     },
     "freesound-weather-crickets": {
       "duration_ms": 0,
@@ -123,6 +123,11 @@
       "duration_ms": 0,
       "file": "sonniss-2026/Sonniss.com-GDC2026-GameAudioBundle1of5/344 Audio - Haunting Ambiences Vol. 5/sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5.ogg",
       "source_name": "sonniss-2026-Sonniss.com-GDC2026-GameAudioBundle1of5-344 Audio - Haunting Ambiences Vol. 5-FIRECrkl_Fire Crackling, Popping, Witch's Cauldron_344 Audio_Haunting Ambiences Vol 5.ogg"
+    },
+    "freesound-voices-fire_multiple_voices": {
+      "duration_ms": 0,
+      "file": "freesound/voices/fire_multiple_voices.ogg",
+      "source_name": "fire_multiple_voices.ogg"
     }
   }
 }

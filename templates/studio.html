@@ -414,69 +414,79 @@ async function _syncPack() {
   const el = document.getElementById('sync-status');
   const progContainer = document.getElementById('sync-progress-container');
   const progBar = document.getElementById('sync-progress-bar');
-  
+
   el.textContent = 'Syncing…'; el.style.color = '#888';
   progContainer.style.display = 'inline-block';
   progBar.style.width = '0%';
 
-  const pollInterval = setInterval(async () => {
-    try {
-      const pRes = await fetch('/api/export/status');
-      const pData = await pRes.json();
-      if (pData.status === 'busy' && pData.total > 0) {
-        const fileProgress = (pData.file_percent || 0) / 100;
-        const totalProgress = (pData.current - 1 + fileProgress) / pData.total;
-        const percent = Math.round(totalProgress * 100);
-        progBar.style.width = percent + '%';
-        el.textContent = 'Syncing (' + pData.current + '/' + pData.total + ') ' + (pData.file_percent || 0) + '%...';
-      }
-    } catch (e) { clearInterval(pollInterval); progContainer.style.display = "none";}
-  }, 1000);
-
-  try {
-    const usedIds = new Set();
-    for (const scene of scenes) {
-      if (scene.ambient) usedIds.add(scene.ambient);
-      for (const t of (scene.triggers || [])) {
-        if (t.sound) usedIds.add(t.sound);
-      }
-    }
-    const usedLibrary = {};
-    for (const id of usedIds) { if (library[id]) usedLibrary[id] = library[id]; }
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout
-    let res, data;
-    try {
-      res = await fetch('/api/export', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: sessionName, scenes, audio_manifest: usedLibrary }),
-        signal: controller.signal
-      });
-      data = await res.json();
-    } finally {
-      clearTimeout(timeoutId); clearInterval(pollInterval); progContainer.style.display = "none";
-    }
-    if (data.audio_manifest) {
-      Object.assign(library, data.audio_manifest);
-      renderEditor();
-    }
-    if (!res.ok) {
-      el.textContent = 'Sync failed: ' + (data.error || res.status);
-      el.style.color = '#e05';
-      return;
-    }
-    el.textContent = 'Ready for phone ✓'; el.style.color = '#4a9';
-    if (data.warnings && data.warnings.length) {
-      const extra = data.warnings.length > 1 ? ` (+${data.warnings.length - 1} more)` : '';
-      el.textContent += ' (⚠ ' + data.warnings[0] + extra + ')';
-      el.style.color = '#f90';
-    }
-    setTimeout(() => { if (el.textContent.startsWith('Ready')) el.textContent = ''; }, 8000);
-  } catch (e) { clearInterval(pollInterval); progContainer.style.display = "none";
-    console.error('Sync error:', e);
-    el.textContent = 'Sync error: ' + e.message;
-    el.style.color = '#e05';
+  // Build manifest
+  const usedIds = new Set();
+  for (const scene of scenes) {
+    if (scene.ambient) usedIds.add(scene.ambient);
+    for (const t of (scene.triggers || [])) { if (t.sound) usedIds.add(t.sound); }
   }
+  const usedLibrary = {};
+  for (const id of usedIds) { if (library[id]) usedLibrary[id] = library[id]; }
+
+  // Kick off background export — returns immediately
+  try {
+    const res = await fetch('/api/export', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: sessionName, scenes, audio_manifest: usedLibrary })
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      el.textContent = 'Sync failed: ' + (d.error || res.status);
+      el.style.color = '#e05'; progContainer.style.display = "none"; return;
+    }
+  } catch (e) {
+    el.textContent = 'Sync error: ' + e.message;
+    el.style.color = '#e05'; progContainer.style.display = "none"; return;
+  }
+
+  // Poll until the background thread reports done or error
+  const deadline = Date.now() + 600000;
+  await new Promise(resolve => {
+    const pollStart = Date.now();
+    const poll = setInterval(async () => {
+      try {
+        const pRes = await fetch('/api/export/status');
+        const pData = await pRes.json();
+        if (pData.status === 'busy' && pData.total > 0) {
+          const pct = Math.round(((pData.current - 1 + (pData.file_percent || 0) / 100)) / pData.total * 100);
+          progBar.style.width = pct + '%';
+          el.textContent = 'Syncing (' + pData.current + '/' + pData.total + ') ' + (pData.file_percent || 0) + '%...';
+        } else if (pData.status === 'done') {
+          clearInterval(poll); progContainer.style.display = "none";
+          if (pData.audio_manifest) { Object.assign(library, pData.audio_manifest); renderEditor(); }
+          el.textContent = 'Ready for phone ✓'; el.style.color = '#4a9';
+          if (pData.warnings && pData.warnings.length) {
+            const extra = pData.warnings.length > 1 ? ` (+${pData.warnings.length - 1} more)` : '';
+            el.textContent += ' (⚠ ' + pData.warnings[0] + extra + ')';
+            el.style.color = '#f90';
+          }
+          setTimeout(() => { if (el.textContent.startsWith('Ready')) el.textContent = ''; }, 8000);
+          resolve();
+        } else if (pData.status === 'error') {
+          clearInterval(poll); progContainer.style.display = "none";
+          el.textContent = 'Sync failed: ' + (pData.error || 'unknown error');
+          el.style.color = '#e05'; resolve();
+        } else if (pData.status === 'idle') {
+          if (Date.now() - pollStart > 3000) {
+            clearInterval(poll); progContainer.style.display = 'none';
+            el.textContent = 'Sync failed: server restarted — please try again';
+            el.style.color = '#e05'; resolve();
+          }
+        } else if (Date.now() > deadline) {
+          clearInterval(poll); progContainer.style.display = "none";
+          el.textContent = 'Sync timed out'; el.style.color = '#e05'; resolve();
+        }
+      } catch (e) {
+        clearInterval(poll); progContainer.style.display = "none";
+        el.textContent = 'Sync error: ' + e.message; el.style.color = '#e05'; resolve();
+      }
+    }, 1000);
+  });
 }
 
 async function deleteSession(name, event) {
@@ -661,7 +671,7 @@ function _upsertTriggerToLibrary(t) {
     existing.sound = t.sound;
     existing.govee_flash = t.govee_flash;
   } else {
-    triggerLibrary.push({ id: `tlib-${Date.now()}`, name: t.name, sound: t.sound, govee_flash: t.govee_flash });
+    triggerLibrary.push({ id: `tlib-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: t.name, sound: t.sound, govee_flash: t.govee_flash });
   }
 }
 
@@ -775,7 +785,7 @@ async function renderExplorer(path = "") {
     if (item.is_dir) {
       return `<div class="sfx-dir" data-path="${item.path.replace(/"/g, '&quot;')}" onclick="renderExplorer(this.dataset.path)">📁 ${item.name}</div>`;
     }
-    const audioId = item.path.replace(/\.(ogg|wav|mp3|flac)$/i, '').replace(/\//g, '-');
+    const audioId = item.path.replace(/\.(ogg|wav|mp3|flac|aiff|aif)$/i, '').replace(/\//g, '-');
     return `<div class="sfx-file"
       draggable="true"
       data-audio-id="${audioId.replace(/"/g, '&quot;')}"

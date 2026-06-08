@@ -29,7 +29,48 @@
         "uri": "https://open.spotify.com/playlist/4U8ZnPlwmuruNsTaHkxb8u?si=2bpFA5PWS-SXpFJhrq3ojQ",
         "volume": 50
       },
-      "triggers": []
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1780931754723",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1780933817145",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1780933817797",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "pulse-rifle"
+          },
+          "id": "trigger-1780933818393",
+          "name": "pulse rifle",
+          "sound": "freesound-guns and explosions-pulse_rifle"
+        },
+        {
+          "govee_flash": {
+            "ref": "flamethrower"
+          },
+          "id": "trigger-1780933819094",
+          "name": "flamethrower",
+          "sound": "freesound-guns and explosions-flamethrower"
+        }
+      ]
     },
     {
       "ambient": "freesound-space-spaceship_quiet",
@@ -92,7 +133,40 @@
         "uri": "https://open.spotify.com/playlist/4U8ZnPlwmuruNsTaHkxb8u?si=2bpFA5PWS-SXpFJhrq3ojQ",
         "volume": 50
       },
-      "triggers": []
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1780931773850",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1780933803290",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "pulse-rifle"
+          },
+          "id": "trigger-1780933804651",
+          "name": "pulse rifle",
+          "sound": "freesound-guns and explosions-pulse_rifle"
+        },
+        {
+          "govee_flash": {
+            "ref": "flamethrower"
+          },
+          "id": "trigger-1780933809017",
+          "name": "flamethrower",
+          "sound": "freesound-guns and explosions-flamethrower"
+        }
+      ]
     },
     {
       "ambient": "freesound-space-spaceship_alarm.aiff",
@@ -107,7 +181,40 @@
         "uri": "https://open.spotify.com/playlist/6blBPc54GBJ9SAcONsyBfA?si=p9KY-KKyRQm9AjnrPnqrnQ",
         "volume": 50
       },
-      "triggers": []
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1780931778240",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1780933812491",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "pulse-rifle"
+          },
+          "id": "trigger-1780933813258",
+          "name": "pulse rifle",
+          "sound": "freesound-guns and explosions-pulse_rifle"
+        },
+        {
+          "govee_flash": {
+            "ref": "flamethrower"
+          },
+          "id": "trigger-1780933813956",
+          "name": "flamethrower",
+          "sound": "freesound-guns and explosions-flamethrower"
+        }
+      ]
     }
   ],
   "audio_manifest": {
@@ -131,20 +238,20 @@
       "file": "freesound/guns and explosions/pulse_rifle.ogg",
       "source_name": "pulse_rifle.ogg"
     },
+    "freesound-space-spaceship": {
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship.ogg",
+      "source_name": "freesound-space-spaceship.ogg"
+    },
     "freesound-space-spaceship_alarm.aiff": {
-      "file": "freesound/space/spaceship_alarm.aiff",
-      "source_name": "spaceship_alarm.aiff",
-      "duration_ms": 0
+      "duration_ms": 0,
+      "file": "freesound-space-spaceship_alarm.ogg",
+      "source_name": "freesound-space-spaceship_alarm.ogg"
     },
     "freesound-space-spaceship_quiet": {
-      "file": "freesound/space/spaceship_quiet.flac",
-      "source_name": "spaceship_quiet.flac",
-      "duration_ms": 0
-    },
-    "freesound-space-spaceship": {
-      "file": "freesound/space/spaceship.wav",
-      "source_name": "spaceship.wav",
-      "duration_ms": 0
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship_quiet.ogg",
+      "source_name": "freesound-space-spaceship_quiet.ogg"
     }
   }
 }

@@ -62,6 +62,7 @@ def _send(cmd: dict):
         _sock.sendto(msg, (_device_ip, CONTROL_PORT))
 
 _export_progress = {"status": "idle", "current": 0, "total": 0, "file": "", "file_percent": 0}
+_export_result = None
 
 # ── Primitives ────────────────────────────────────────────────────────────────
 
@@ -593,7 +594,7 @@ def upload_sfx():
             "-af", "loudnorm=I=-14:TP=-1:LRA=11",
             "-c:a", "libvorbis", "-q:a", "4",
             output_path
-        ], check=True)
+        ], check=True, preexec_fn=os.setsid)
         result = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", output_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True)
         duration_ms = int(float(result.stdout.strip()) * 1000)
     except Exception as e:
@@ -626,8 +627,13 @@ def manage_session(name):
     if not os.path.exists(path): return jsonify({"error": "not found"}), 404
     with open(path, "r") as f: return jsonify(json.load(f))
 
+
 @app.route("/api/export/status")
-def export_status(): return jsonify(_export_progress)
+def export_status():
+    result = dict(_export_progress)
+    if _export_progress.get('status') in ('done', 'error') and _export_result:
+        result.update(_export_result)
+    return jsonify(result)
 
 def _get_duration(path):
     try:
@@ -655,17 +661,14 @@ def _run_ffmpeg_with_progress(in_path, out_path, duration):
             except: pass
     process.wait()
 
-@app.route("/api/export", methods=["POST"])
-def export_pack():
-    global _export_progress
+def _do_export(data):
+    global _export_progress, _export_result
     try:
-        data = request.json; pack_name = data.get("name", "New Session")
+        pack_name = data.get("name", "New Session")
         scenes = data.get("scenes", []); audio_manifest = data.get("audio_manifest", {})
-        _export_progress = {"status": "busy", "current": 0, "total": len(audio_manifest), "file": ""}
         safe_name = re.sub(r'[^\w\s\-]', '', pack_name).strip().replace(' ', '_')
         zip_filename = f"{safe_name}.zip"; zip_path = os.path.join(PACKS_DIR, zip_filename)
         warnings = []
-        # Work on a copy of audio_manifest for the ZIP to avoid flattening the disk session
         zip_manifest = copy.deepcopy(audio_manifest)
         with zipfile.ZipFile(zip_path, 'w', allowZip64=True) as z:
             for i, (audio_id, info) in enumerate(zip_manifest.items()):
@@ -673,68 +676,51 @@ def export_pack():
                 _export_progress["file"] = info.get("file", audio_id)
                 audio_path = os.path.join(SFX_DIR, info['file'])
                 if not os.path.exists(audio_path):
-                    # Ultra Deep Auto-recover: search by file, source_name, or audio_id
                     search_targets = set()
                     search_targets.add(audio_id)
-                    for ext in ['.ogg', '.wav', '.mp3', '.flac']:
+                    for ext in ['.ogg', '.wav', '.mp3', '.flac', '.aiff', '.aif']:
                         search_targets.add(audio_id + ext)
                     for k in ['file', 'source_name']:
                         if info.get(k):
                             base = os.path.basename(info[k])
                             search_targets.add(base)
-                            search_targets.add(re.sub(r'\.(ogg|wav|mp3|flac)$', '.ogg', base, flags=re.IGNORECASE))
+                            search_targets.add(re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif)$', '.ogg', base, flags=re.IGNORECASE))
                     print(f'Attempting recovery for {audio_id}. Targets: {search_targets}')
-                    
                     found_path = None
                     for root, _, files in os.walk(SFX_DIR):
                         for f in files:
                             if f in search_targets:
-                                found_path = os.path.join(root, f)
-                                break
+                                found_path = os.path.join(root, f); break
                         if found_path: break
-                    
                     if found_path:
                         print(f'Recovered {info.get("file")} -> {found_path}')
                         audio_path = found_path
-                        ext = '.ogg' if found_path.endswith('.ogg') else os.path.splitext(found_path)[1].lower()
                         new_rel = os.path.relpath(found_path, SFX_DIR)
                         new_base = os.path.basename(found_path)
-                        info['file'] = new_rel
-                        info['source_name'] = new_base
-                        # Persist to disk manifest
+                        info['file'] = new_rel; info['source_name'] = new_base
                         if audio_id in audio_manifest:
                             audio_manifest[audio_id]['file'] = new_rel
                             audio_manifest[audio_id]['source_name'] = new_base
                     else:
-                        warnings.append(f'Missing: {info["file"]}')
-                        continue
+                        warnings.append(f'Missing: {info["file"]}'); continue
                 ext = os.path.splitext(audio_path)[1].lower()
-                if ext not in ['.ogg', '.wav', '.mp3', '.flac']:
-                    warnings.append(f'Unsupported format: {info["file"]}')
-                    continue
+                if ext not in ['.ogg', '.wav', '.mp3', '.flac', '.aiff', '.aif']:
+                    warnings.append(f'Unsupported format: {info["file"]}'); continue
                 file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
-                if file_size_mb > 20:
-                    if ext == ".ogg":
-                        warnings.append(f"Large OGG ({file_size_mb:.0f} MB): {info['file']} - consider shorter loop")
-
-                base_id = re.sub(r'\.(ogg|wav|mp3|flac)$', '', audio_id, flags=re.IGNORECASE)
+                if file_size_mb > 20 and ext == ".ogg":
+                    warnings.append(f"Large OGG ({file_size_mb:.0f} MB): {info['file']} - consider shorter loop")
+                base_id = re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif)$', '', audio_id, flags=re.IGNORECASE)
                 if ext == '.ogg':
                     _export_progress['file_percent'] = 100
-                    z.write(audio_path, base_id + '.ogg')
-                    info['file'] = base_id + '.ogg'
+                    z.write(audio_path, base_id + '.ogg'); info['file'] = base_id + '.ogg'
                 else:
-                    # Permanent in-place conversion
                     final_ogg_path = os.path.join(os.path.dirname(audio_path), base_id + '.ogg')
                     try:
                         duration = _get_duration(audio_path)
                         _run_ffmpeg_with_progress(audio_path, final_ogg_path, duration)
-                        
-                        # Verify conversion and cleanup original
                         if os.path.exists(final_ogg_path):
                             os.remove(audio_path)
-                            info['file'] = base_id + '.ogg'
-                            info['source_name'] = base_id + '.ogg'
-                            # Persist to disk manifest
+                            info['file'] = base_id + '.ogg'; info['source_name'] = base_id + '.ogg'
                             if audio_id in audio_manifest:
                                 audio_manifest[audio_id]['file'] = base_id + '.ogg'
                                 audio_manifest[audio_id]['source_name'] = base_id + '.ogg'
@@ -746,31 +732,35 @@ def export_pack():
                             warnings.append(f"Conversion failed: {info['file']}")
                     except Exception as e:
                         warnings.append(f"Conversion error {info['file']}: {str(e)}")
-            session_json = {
+            z.writestr('session.json', json.dumps({
                 'version': 1, 'name': pack_name,
                 'exported': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                 'scenes': scenes, 'audio_manifest': zip_manifest
-            }
-            
-            z.writestr('session.json', json.dumps(session_json, indent=2))
-        
-        # Update the session file on disk if it exists (Merge manifest)
+            }, indent=2))
         session_path = os.path.join(SESSIONS_DIR, pack_name + '.json')
         if os.path.exists(session_path):
             try:
-                with open(session_path, 'r') as f:
-                    disk_session = json.load(f)
+                with open(session_path, 'r') as f: disk_session = json.load(f)
                 if 'audio_manifest' not in disk_session: disk_session['audio_manifest'] = {}
                 disk_session['audio_manifest'].update(audio_manifest)
-                with open(session_path, 'w') as f:
-                    json.dump(disk_session, f, indent=2)
+                with open(session_path, 'w') as f: json.dump(disk_session, f, indent=2)
             except: pass
-
-        _export_progress = {"status": "idle", "current": 0, "total": 0, "file": "", "file_percent": 0}
-        return jsonify({"url": f"/api/packs/{zip_filename}", "warnings": warnings, "audio_manifest": audio_manifest})
+        _export_result = {"url": f"/api/packs/{zip_filename}", "warnings": warnings, "audio_manifest": audio_manifest}
+        _export_progress = {"status": "done", "current": 0, "total": 0, "file": "", "file_percent": 0}
     except Exception as e:
-        _export_progress = {"status": "idle", "current": 0, "total": 0, "file": "", "file_percent": 0}
-        return jsonify({'error': str(e)}), 500
+        _export_result = {"error": str(e)}
+        _export_progress = {"status": "error", "current": 0, "total": 0, "file": "", "file_percent": 0}
+
+@app.route("/api/export", methods=["POST"])
+def export_pack():
+    global _export_progress, _export_result
+    if _export_progress.get('status') == 'busy':
+        return jsonify({'error': 'export already in progress'}), 409
+    _export_result = None
+    data = request.json
+    _export_progress = {"status": "busy", "current": 0, "total": len(data.get('audio_manifest', {})), "file": "", "file_percent": 0}
+    threading.Thread(target=_do_export, args=(data,), daemon=True).start()
+    return jsonify({"status": "started"})
 
 @app.route("/api/packs/<filename>")
 def get_pack(filename): return send_from_directory(PACKS_DIR, filename)
@@ -793,4 +783,4 @@ if __name__ == '__main__':
     print('  Lighting Lab: http://' + local_ip + ':5000')
     print('  Studio:       http://' + local_ip + ':5000/studio')
     print(('─' * 40) + '\n')
-    app.run(host='0.0.0.0', port=5000, use_reloader=True, threaded=True)
+    app.run(host='0.0.0.0', port=5000, use_reloader=False, threaded=True)
