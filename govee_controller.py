@@ -457,6 +457,7 @@ def _bio_burst():
     _burst_gen += 1; gen = _burst_gen
     _burst_active = True; _on()
     steps = [
+        # Phase 1 — pressure build → white-pink burst → first decay (1.6s)
         (130,   0,  15, 200),
         (180,   5,  20, 200),
         (230,  10,  25, 200),
@@ -467,6 +468,20 @@ def _bio_burst():
         (210,   0,  15, 100),
         ( 15,   0,   3, 200),
         ( 70,   0,  10, 300),
+        # Phase 2 — low simmer → rapid red/dark finale → fade (1.8s)
+        (150,   0,  10, 200),   # lower fire: second squish begins
+        (200,   0,  15, 200),   # building
+        (230,   5,  15, 100),   # more intense
+        ( 15,   0,   3, 100),   # compression beat
+        (255,   0,  10,  80),   # SMG-like finale: red
+        ( 10,   0,   2,  80),   # dark
+        (255,   0,  10,  80),   # red
+        ( 10,   0,   2,  80),   # dark
+        (230,   0,   8,  80),   # red dimming
+        ( 10,   0,   2, 120),   # dark
+        (160,   0,   6, 150),   # red dimmer
+        ( 10,   0,   2, 200),   # dark
+        ( 60,   0,   4, 300),   # fade out
     ]
     def _step(n):
         global _burst_timer, _burst_active
