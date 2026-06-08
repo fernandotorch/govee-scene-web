@@ -169,6 +169,24 @@ def _flicker_loop(r, g, b, on_min=5.0, on_max=10.0, cut_min=0.6, cut_max=1.0):
     right = threading.Thread(target=bar_loop, args=(RIGHT_MASK,), daemon=True)
     left.start(); right.start(); _stop.wait(); left.join(timeout=1); right.join(timeout=1)
 
+def _flicker_split_loop(r1, g1, b1, r2, g2, b2, on_min=5.0, on_max=10.0, cut_min=0.6, cut_max=1.0):
+    _on(); _seg_colors([(r1, g1, b1, LEFT_MASK), (r2, g2, b2, RIGHT_MASK)])
+    def bar_loop(r, g, b, mask):
+        session = _session_id
+        while not _stop.is_set() and _session_id == session:
+            _seg_colors([(r, g, b, mask)]); _stop.wait(random.uniform(on_min, on_max))
+            if _stop.is_set() or _session_id != session: break
+            cut = random.uniform(cut_min, cut_max)
+            while cut > 0.05 and not _stop.is_set() and _session_id == session:
+                _seg_colors([(2, 2, 2, mask)]); _stop.wait(cut)
+                if _stop.is_set() or _session_id != session: break
+                _seg_colors([(r, g, b, mask)]); _stop.wait(cut * random.uniform(0.2, 0.4))
+                cut *= random.uniform(0.35, 0.55)
+            if not _stop.is_set(): _seg_colors([(r, g, b, mask)])
+    left = threading.Thread(target=bar_loop, args=(r1, g1, b1, LEFT_MASK), daemon=True)
+    right = threading.Thread(target=bar_loop, args=(r2, g2, b2, RIGHT_MASK), daemon=True)
+    left.start(); right.start(); _stop.wait(); left.join(timeout=1); right.join(timeout=1)
+
 def _alarm_loop():
     _on(); _bright(100)
     session = _session_id
@@ -315,6 +333,38 @@ def _disian_loop():
         _color(r, 0, b); _bright(int(22 + v * 58)); _stop.wait(0.08)
 
 
+def _amber_breathe_loop():
+    _on(); _bright(100)
+    session = _session_id; t0 = time.time()
+    while not _stop.is_set() and _session_id == session:
+        v = (math.sin(2 * math.pi * (time.time() - t0) / 12.0) + 1) / 2
+        r = int(200 + 55 * v)
+        g = int(90 + 120 * v)
+        b = int(130 * v)
+        _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
+        _stop.wait(0.05)
+
+
+def _harneven_loop():
+    on_c = (210, 215, 255); cut_c = (160, 0, 255)
+    _on(); _seg_colors([(on_c[0], on_c[1], on_c[2], LEFT_MASK | RIGHT_MASK)])
+    def bar_loop(mask):
+        session = _session_id
+        while not _stop.is_set() and _session_id == session:
+            _seg_colors([(*on_c, mask)]); _stop.wait(random.uniform(20.0, 45.0))
+            if _stop.is_set() or _session_id != session: break
+            cut = random.uniform(0.1, 0.4)
+            while cut > 0.03 and not _stop.is_set() and _session_id == session:
+                _seg_colors([(*cut_c, mask)]); _stop.wait(cut)
+                if _stop.is_set() or _session_id != session: break
+                _seg_colors([(*on_c, mask)]); _stop.wait(cut * random.uniform(0.2, 0.4))
+                cut *= random.uniform(0.35, 0.55)
+            if not _stop.is_set(): _seg_colors([(*on_c, mask)])
+    left = threading.Thread(target=bar_loop, args=(LEFT_MASK,), daemon=True)
+    right = threading.Thread(target=bar_loop, args=(RIGHT_MASK,), daemon=True)
+    left.start(); right.start(); _stop.wait(); left.join(timeout=1); right.join(timeout=1)
+
+
 def _static_loop(r, g, b, brightness=100):
     _on(); _bright(brightness)
     session = _session_id
@@ -366,6 +416,10 @@ SCENES = {
     'evil': lambda: _run(_purple_evil_loop),
     'disian': lambda: _run(_disian_loop),
     'flicker-slow':     lambda: _run(_flicker_loop, 240, 230, 200, 20.0, 45.0, 0.2, 0.5),
+    'flicker-pink':        lambda: _run(_flicker_loop, 255, 0, 180, 20.0, 45.0, 0.2, 0.5),
+    'flicker-chapacabana': lambda: _run(_flicker_split_loop, 0, 60, 255, 160, 0, 255, 4.0, 10.0, 0.2, 0.5),
+    'pelagio':  lambda: _run(_amber_breathe_loop),
+    'harneven': lambda: _run(_harneven_loop),
     'cronus':           lambda: _run(_static_loop, 165, 195, 255),
     'draconis':  lambda: _run(_draconis_hb_loop,   80, 200,  10),
     'autodestruct': lambda: _run(_draconis_pulse_loop, 255, 80, 0, 1.8, 0.05, 1.0),
@@ -523,6 +577,7 @@ BURST_DEFS = {
     'pulse-rifle':    _pulse_rifle_burst,
     'flamethrower':   _flamethrower_burst,
     'bio-burst':      _bio_burst,
+    'fingers-reveal': lambda: _fire_burst(160, 0, 255, 2.0),
 }
 
 
