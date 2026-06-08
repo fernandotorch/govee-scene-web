@@ -494,7 +494,9 @@ def _bio_burst():
         ( 30,   0,   1, 500),   # nearly done
         (  8,   0,   0, 700),   # almost out
         ( 15,   0,   0, 700),   # last ember
-        (  4,   0,   0, 600),   # gone
+        (  4,   0,   0, 600),   # nearly gone
+        ( 10,   0,   0, 700),   # final flicker
+        (  2,   0,   0, 700),   # gone
     ]
     def _step(n):
         global _burst_timer, _burst_active
