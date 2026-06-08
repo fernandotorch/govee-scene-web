@@ -86,6 +86,13 @@ def _seg_packet(r: int, g: int, b: int, mask: int) -> str:
     return base64.b64encode(bytes(pkt)).decode()
 
 def _seg_colors(groups: list[tuple[int, int, int, int]]):
+    global _last_left, _last_right
+    if not _burst_active:
+        for r, g, b, mask in groups:
+            if mask & LEFT_MASK:
+                _last_left = (r, g, b)
+            if mask & RIGHT_MASK:
+                _last_right = (r, g, b)
     _send({"cmd": "ptReal", "data": {"command": [_seg_packet(r, g, b, m) for r, g, b, m in groups]}})
 
 # ── Animation engine ──────────────────────────────────────────────────────────
@@ -96,9 +103,14 @@ _thread      = None
 _session_id  = 0
 _burst_timer = None
 _burst_gen   = 0
+_last_left    = None   # last (r,g,b) sent to LEFT_MASK by an animation
+_last_right   = None   # last (r,g,b) sent to RIGHT_MASK by an animation
+_burst_active = False  # True while a burst flash is in progress
+_current_scene = None
 
 def _stop_all():
-    global _thread, _session_id, _burst_timer
+    global _thread, _session_id, _burst_timer, _burst_active
+    _burst_active = False
     _session_id += 1
     _stop.set()
     if _thread and _thread.is_alive(): _thread.join(timeout=1.0)
@@ -138,14 +150,14 @@ def _club_loop():
         _seg_colors([(*ls, LEFT_MASK), (*rs, RIGHT_MASK)])
         _stop.wait(TICK)
 
-def _flicker_loop(r, g, b):
+def _flicker_loop(r, g, b, on_min=5.0, on_max=10.0, cut_min=0.6, cut_max=1.0):
     _on(); _seg_colors([(r, g, b, LEFT_MASK), (r, g, b, RIGHT_MASK)])
     def bar_loop(mask):
         session = _session_id
         while not _stop.is_set() and _session_id == session:
-            _seg_colors([(r, g, b, mask)]); _stop.wait(random.uniform(5.0, 10.0))
+            _seg_colors([(r, g, b, mask)]); _stop.wait(random.uniform(on_min, on_max))
             if _stop.is_set() or _session_id != session: break
-            cut = random.uniform(0.6, 1.0)
+            cut = random.uniform(cut_min, cut_max)
             while cut > 0.05 and not _stop.is_set() and _session_id == session:
                 _seg_colors([(2, 2, 2, mask)]); _stop.wait(cut)
                 if _stop.is_set() or _session_id != session: break
@@ -301,6 +313,47 @@ def _disian_loop():
         r = int(65 + v * 45); b = int(105 + v * 95)
         _color(r, 0, b); _bright(int(22 + v * 58)); _stop.wait(0.08)
 
+
+def _static_loop(r, g, b, brightness=100):
+    _on(); _bright(brightness)
+    session = _session_id
+    while not _stop.is_set() and _session_id == session:
+        _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
+        _stop.wait(2.0)
+
+
+def _draconis_hb_loop(r, g, b):
+    _on(); _bright(100)
+    session = _session_id
+    base = (r // 6, g // 6, b // 6)
+    dub  = (r * 3 // 4, g * 3 // 4, b * 3 // 4)
+    while not _stop.is_set() and _session_id == session:
+        _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
+        _stop.wait(0.10)
+        if _stop.is_set() or _session_id != session: break
+        _seg_colors([(*base, LEFT_MASK | RIGHT_MASK)])
+        _stop.wait(0.18)
+        if _stop.is_set() or _session_id != session: break
+        _seg_colors([(*dub, LEFT_MASK | RIGHT_MASK)])
+        _stop.wait(0.10)
+        if _stop.is_set() or _session_id != session: break
+        _seg_colors([(*base, LEFT_MASK | RIGHT_MASK)])
+        _stop.wait(1.6 + random.uniform(-0.2, 0.4))
+
+
+def _draconis_pulse_loop(r, g, b, period=3.5, min_s=0.12, max_s=0.55):
+    _on(); _bright(100)
+    session = _session_id
+    t0 = time.time()
+    PERIOD = period
+    MIN_S, MAX_S = min_s, max_s
+    while not _stop.is_set() and _session_id == session:
+        v = (math.sin(2 * math.pi * (time.time() - t0) / PERIOD) + 1) / 2
+        s = MIN_S + (MAX_S - MIN_S) * v
+        _seg_colors([(round(r * s), round(g * s), round(b * s), LEFT_MASK | RIGHT_MASK)])
+        _stop.wait(0.05)
+
+
 SCENES = {
     'off': lambda: (_stop_all(), _off()),
     'police': lambda: _run(_police_loop),
@@ -311,28 +364,125 @@ SCENES = {
     'torch-fire': lambda: _run(_torch_fire_loop),
     'evil': lambda: _run(_purple_evil_loop),
     'disian': lambda: _run(_disian_loop),
+    'flicker-slow':     lambda: _run(_flicker_loop, 240, 230, 200, 20.0, 45.0, 0.2, 0.5),
+    'cronus':           lambda: _run(_static_loop, 165, 195, 255),
+    'draconis':  lambda: _run(_draconis_hb_loop,   80, 200,  10),
+    'autodestruct': lambda: _run(_draconis_pulse_loop, 255, 80, 0, 1.8, 0.05, 1.0),
 }
 
+def _smg_burst():
+    global _burst_timer, _burst_gen, _burst_active
+    if _burst_timer is not None: _burst_timer.cancel()
+    _burst_gen += 1; gen = _burst_gen
+    _burst_active = True; _on()
+    def _step(n):
+        global _burst_timer, _burst_active
+        if _burst_gen != gen: return
+        if n >= 8:
+            _burst_active = False; _burst_end(); return
+        color = (255, 240, 180) if n % 2 == 0 else (255, 150, 10)
+        _seg_colors([(color[0], color[1], color[2], LEFT_MASK | RIGHT_MASK)])
+        _burst_timer = threading.Timer(0.105, lambda: _step(n + 1))
+        _burst_timer.start()
+    _step(0)
+
+def _pulse_rifle_burst():
+    global _burst_timer, _burst_gen, _burst_active
+    if _burst_timer is not None: _burst_timer.cancel()
+    _burst_gen += 1; gen = _burst_gen
+    _burst_active = True; _on()
+    _seg_colors([(30, 90, 255, LEFT_MASK | RIGHT_MASK)])   # blue charge
+    def _boom():
+        global _burst_timer, _burst_active
+        if _burst_gen != gen: return
+        _seg_colors([(230, 255, 255, LEFT_MASK | RIGHT_MASK)])  # white-cyan crack
+        def _afterglow():
+            global _burst_timer, _burst_active
+            if _burst_gen != gen: return
+            _seg_colors([(0, 255, 80, LEFT_MASK | RIGHT_MASK)])    # green afterglow
+            def _done():
+                global _burst_active
+                if _burst_gen != gen: return
+                _burst_active = False; _burst_end()
+            _burst_timer = threading.Timer(0.20, _done); _burst_timer.start()
+        _burst_timer = threading.Timer(0.15, _afterglow); _burst_timer.start()
+    _burst_timer = threading.Timer(0.60, _boom); _burst_timer.start()
+
+def _flamethrower_burst():
+    global _burst_timer, _burst_gen, _burst_active
+    if _burst_timer is not None: _burst_timer.cancel()
+    _burst_gen += 1; gen = _burst_gen
+    _burst_active = True; _on()
+    flicker = [
+        (255,  80,  0), (255, 160, 20), (255,  55,  0),
+        (255, 175, 25), (255,  65,  0), (255, 145, 10),
+        (220,  45,  0), (255, 110,  5),
+    ]
+    def _run_flicker(on_done, speed=1.0):
+        _seg_colors([(255, 220, 80, LEFT_MASK | RIGHT_MASK)])   # ignition flash
+        def _step(n):
+            global _burst_timer
+            if _burst_gen != gen: return
+            if n >= len(flicker):
+                on_done(); return
+            _seg_colors([(flicker[n][0], flicker[n][1], flicker[n][2], LEFT_MASK | RIGHT_MASK)])
+            _burst_timer = threading.Timer(0.115 * speed, lambda: _step(n + 1)); _burst_timer.start()
+        _burst_timer = threading.Timer(0.08 * speed, lambda: _step(0)); _burst_timer.start()
+    def _second():
+        if _burst_gen != gen: return
+        def _do_gap():
+            if _burst_gen != gen: return
+            _seg_colors([(20, 5, 0, LEFT_MASK | RIGHT_MASK)])   # near-dark gap
+            def _start():
+                if _burst_gen != gen: return
+                def _done():
+                    global _burst_active
+                    if _burst_gen != gen: return
+                    _seg_colors([(150, 18, 0, LEFT_MASK | RIGHT_MASK)])  # dying ember
+                    def _end():
+                        global _burst_active
+                        if _burst_gen != gen: return
+                        _burst_active = False; _burst_end()
+                    _burst_timer = threading.Timer(0.375, _end); _burst_timer.start()
+                _run_flicker(_done, speed=1.5)
+            _burst_timer = threading.Timer(0.28, _start); _burst_timer.start()
+        _burst_timer = threading.Timer(0.10, _do_gap); _burst_timer.start()
+    _run_flicker(_second)
+
 BURST_DEFS = {
-    'white-burst':  (255, 255, 255, 0.2),
-    'orange-burst': (255, 100,   0, 0.3),
-    'purple-pulse': (180,   0, 255, 0.3),
-    'fire-spark':   (255, 200, 50, 0.1),
+    'white-burst':    lambda: _fire_burst(255, 255, 255, 0.20),
+    'orange-burst':   lambda: _fire_burst(255, 100,   0, 0.30),
+    'purple-pulse':   lambda: _fire_burst(180,   0, 255, 0.30),
+    'fire-spark':     lambda: _fire_burst(255, 200,  50, 0.30),
+    'smg-burst':      _smg_burst,
+    'pulse-rifle':    _pulse_rifle_burst,
+    'flamethrower':   _flamethrower_burst,
 }
 
 
 def _burst_end():
-    _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
+    restore = []
+    if _last_left:
+        restore.append((*_last_left, LEFT_MASK))
+    if _last_right:
+        restore.append((*_last_right, RIGHT_MASK))
+    if restore:
+        _seg_colors(restore)
+    else:
+        _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
 
 def _fire_burst(r, g, b, duration):
-    global _burst_timer, _burst_gen
+    global _burst_timer, _burst_gen, _burst_active
     if _burst_timer is not None:
         _burst_timer.cancel()
     _burst_gen += 1
     gen = _burst_gen
+    _burst_active = True
     _on()
     _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
     def _timed_off():
+        global _burst_active
+        _burst_active = False
         if _burst_gen == gen:
             _burst_end()
     _burst_timer = threading.Timer(duration, _timed_off)
@@ -367,7 +517,9 @@ def studio(): return send_file(os.path.join(BASE_DIR, "templates/studio.html"))
 
 @app.route("/scene/<name>", methods=["POST"])
 def set_scene(name):
+    global _current_scene
     if name not in SCENES: return jsonify({"error": "unknown scene"}), 404
+    _current_scene = name
     SCENES[name](); return jsonify({"scene": name, "ok": True})
 
 def _load_effects():
@@ -391,10 +543,10 @@ def get_effects(): return jsonify(_load_effects())
 
 @app.route("/api/effects/<ref>/preview", methods=["POST"])
 def preview_burst(ref):
-    defn = BURST_DEFS.get(ref)
-    if not defn:
+    fn = BURST_DEFS.get(ref)
+    if not fn:
         return jsonify({"error": "unknown burst ref"}), 404
-    _fire_burst(*defn)
+    fn()
     return jsonify({"ok": True})
 
 @app.route("/api/sfx/config", methods=["GET", "POST"])
@@ -491,7 +643,7 @@ def _run_ffmpeg_with_progress(in_path, out_path, duration):
         '-c:a', 'libvorbis', '-q:a', '4',
         out_path
     ]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, preexec_fn=os.setsid)
     while True:
         line = process.stdout.readline()
         if not line: break
@@ -641,4 +793,4 @@ if __name__ == '__main__':
     print('  Lighting Lab: http://' + local_ip + ':5000')
     print('  Studio:       http://' + local_ip + ':5000/studio')
     print(('─' * 40) + '\n')
-    app.run(host='0.0.0.0', port=5000, use_reloader=False, threaded=True)
+    app.run(host='0.0.0.0', port=5000, use_reloader=True, threaded=True)

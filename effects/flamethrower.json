@@ -1,0 +1,7 @@
+{
+  "ref": "flamethrower",
+  "name": "Flamethrower",
+  "type": "burst",
+  "color": "#ff5000",
+  "description": "1.3s ignition flash → rapid fire flicker → dying ember"
+}

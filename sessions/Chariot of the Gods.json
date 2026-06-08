@@ -1,0 +1,150 @@
+{
+  "name": "Chariot of the Gods",
+  "scenes": [
+    {
+      "ambient": "freesound-space-spaceship",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "flicker-slow"
+      },
+      "id": "scene-1780922195782",
+      "name": "Montero",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/0CEZtZ2aPc99tGxdL2fqIg?si=s-q6ehq8QdCm7v300jaQfA",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": "freesound-space-spaceship_quiet",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "cronus"
+      },
+      "id": "scene-1780922205437",
+      "name": "Cronus sleeping",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/4U8ZnPlwmuruNsTaHkxb8u?si=2bpFA5PWS-SXpFJhrq3ojQ",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": "freesound-space-spaceship_quiet",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "draconis"
+      },
+      "id": "scene-1780925335338",
+      "name": "Alien",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/6blBPc54GBJ9SAcONsyBfA?si=p9KY-KKyRQm9AjnrPnqrnQ",
+        "volume": 50
+      },
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1780927893341",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1780927990801",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "pulse-rifle"
+          },
+          "id": "trigger-1780929475758",
+          "name": "pulse rifle",
+          "sound": "freesound-guns and explosions-pulse_rifle"
+        },
+        {
+          "govee_flash": {
+            "ref": "flamethrower"
+          },
+          "id": "trigger-1780930776565",
+          "name": "flamethrower",
+          "sound": "freesound-guns and explosions-flamethrower"
+        }
+      ]
+    },
+    {
+      "ambient": "freesound-space-spaceship_quiet",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "flicker-slow"
+      },
+      "id": "scene-1780925221392",
+      "name": "Cronus awake",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/4U8ZnPlwmuruNsTaHkxb8u?si=2bpFA5PWS-SXpFJhrq3ojQ",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": "freesound-space-spaceship_alarm.aiff",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "autodestruct"
+      },
+      "id": "scene-1780922218630",
+      "name": "Warning",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/6blBPc54GBJ9SAcONsyBfA?si=p9KY-KKyRQm9AjnrPnqrnQ",
+        "volume": 50
+      },
+      "triggers": []
+    }
+  ],
+  "audio_manifest": {
+    "freesound-guns and explosions-autofire": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/autofire.ogg",
+      "source_name": "autofire.ogg"
+    },
+    "freesound-guns and explosions-flamethrower": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/flamethrower.ogg",
+      "source_name": "flamethrower.ogg"
+    },
+    "freesound-guns and explosions-pistol": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/freesound-guns and explosions-pistol.ogg",
+      "source_name": "freesound-guns and explosions-pistol.ogg"
+    },
+    "freesound-guns and explosions-pulse_rifle": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/pulse_rifle.ogg",
+      "source_name": "pulse_rifle.ogg"
+    },
+    "freesound-space-spaceship_alarm.aiff": {
+      "file": "freesound/space/spaceship_alarm.aiff",
+      "source_name": "spaceship_alarm.aiff",
+      "duration_ms": 0
+    },
+    "freesound-space-spaceship_quiet": {
+      "file": "freesound/space/spaceship_quiet.flac",
+      "source_name": "spaceship_quiet.flac",
+      "duration_ms": 0
+    },
+    "freesound-space-spaceship": {
+      "file": "freesound/space/spaceship.wav",
+      "source_name": "spaceship.wav",
+      "duration_ms": 0
+    }
+  }
+}

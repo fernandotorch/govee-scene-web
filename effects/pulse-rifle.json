@@ -1,0 +1,7 @@
+{
+  "ref": "pulse-rifle",
+  "name": "Pulse Rifle",
+  "type": "burst",
+  "color": "#00ff82",
+  "description": "450ms blue-to-green charge burst"
+}

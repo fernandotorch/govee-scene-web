@@ -1,0 +1,8 @@
+{
+  "ref": "autodestruct",
+  "name": "Alarm Pulse",
+  "type": "ambient",
+  "category": "atmosphere",
+  "color": "#ff5000",
+  "description": "Fast orange pulse — self-destruct sequence active"
+}

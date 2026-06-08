@@ -41,6 +41,10 @@
 
   /* Trigger cards */
   .trigger-card { background: #1e1e1e; padding: 10px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #2a2a2a; }
+  .tlib-card { background: #181c18; padding: 8px 10px; margin-bottom: 6px; border-radius: 5px; border: 1px solid #2a2a2a; display: flex; align-items: center; gap: 8px; font-size: 0.83em; cursor: default; }
+  .tlib-card:hover { border-color: #444; }
+  .tlib-card .tlib-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ccc; }
+  .tlib-card .tlib-meta { color: #555; font-size: 0.78em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
   .trigger-card.sound-target { border-color: var(--accent); }
   .trigger-card.drop-active { border-color: var(--accent); background: #051a2a; }
   .trigger-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
@@ -95,11 +99,16 @@
 
   .upload-zone { border: 2px dashed var(--border); padding: 12px; text-align: center; color: #555; margin-top: 14px; font-size: 0.8em; border-radius: 4px; }
 
-/* Spotify + SFX + Light sub-sections */
-#spotify-section, #ambient-section { flex: 0 0 auto; max-height: 50%; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); overflow: hidden; }
-#spotify-section .panel-content, #ambient-section .panel-content { flex: 1; overflow-y: auto; padding: 10px 12px; }
-#sfx-section, #bursts-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-#sfx-section .panel-content, #bursts-section .panel-content { flex: 1; overflow-y: auto; padding: 10px 12px; }
+/* Right panel sub-sections — all equal height, all scrollable */
+#spotify-section, #ambient-section, #sfx-section, #bursts-section, #trigger-library-section {
+  flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+#spotify-section .panel-content, #ambient-section .panel-content,
+#sfx-section .panel-content, #bursts-section .panel-content,
+#trigger-library-section .panel-content {
+  flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px;
+}
 #spotify-add-form { padding: 8px 12px; border-top: 1px solid #222; flex-shrink: 0; }
 .spotify-item { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 4px; cursor: grab; font-size: 0.84em; color: #aaa; user-select: none; }
 .spotify-item:hover { background: #1e1e1e; color: var(--text); }
@@ -154,6 +163,12 @@
       <div class="panel-header"><h2>Bursts</h2></div>
       <div class="panel-content">
         <div id="bursts-list"></div>
+      </div>
+    </div>
+    <div id="trigger-library-section">
+      <div class="panel-header"><h2>Saved Triggers</h2></div>
+      <div class="panel-content">
+        <div id="trigger-library-list"></div>
       </div>
     </div>
   </div>
@@ -212,7 +227,7 @@
 </div>
 
 <script>
-let effects = [], library = {}, scenes = [], activeSceneIndex = -1, sessionName = "New Session";
+let effects = [], library = {}, scenes = [], triggerLibrary = [], activeSceneIndex = -1, sessionName = "New Session";
 let currentPath = "";
 let _soundTarget = null;  // null | trigger-index — which trigger is waiting for a sound pick
 let _dragAudioId = null;  // audio ID being dragged from the SFX panel
@@ -285,6 +300,16 @@ let _previewAudioPath = null;
 let _previewingEffect = null; // currently active preview effect (null = off)
 let _dirty = false;       // true when there are unsaved changes
 
+// ── Global trigger library (persists across sessions via localStorage) ────────
+
+function _loadGlobalLibrary() {
+  try { return JSON.parse(localStorage.getItem('govee-trigger-library') || '[]'); }
+  catch { return []; }
+}
+function _saveGlobalLibrary() {
+  localStorage.setItem('govee-trigger-library', JSON.stringify(triggerLibrary));
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
@@ -292,8 +317,9 @@ async function init() {
   effects = await effRes.json();
   const rootData = await rootRes.json();
   document.getElementById('sfx-root-display').textContent = rootData.path;
+  triggerLibrary = _loadGlobalLibrary();
   renderScenes(); renderExplorer(); renderEffects();
-  renderSpotifyList();
+  renderSpotifyList(); renderTriggerLibrary();
 }
 
 // ── SFX path editing ──────────────────────────────────────────────────────────
@@ -352,7 +378,7 @@ async function loadSession(name) {
   document.getElementById('session-name-input').value = sessionName;
   library = data.audio_manifest || {};
   _dirty = false;
-  closeModal(); renderScenes(); selectScene(0);
+  closeModal(); renderScenes(); selectScene(0); renderTriggerLibrary();
 }
 
 async function saveSession() {
@@ -362,17 +388,26 @@ async function saveSession() {
     sessionName = n;
     document.getElementById('session-name-input').value = sessionName;
   }
-  const res = await fetch('/api/sessions/' + sessionName, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: sessionName, scenes, audio_manifest: library })
-  });
-  if (!res.ok) {
-    const data = await res.json();
-    alert('Save failed: ' + (data.error || res.status));
-    return;
+  try {
+    const res = await fetch('/api/sessions/' + encodeURIComponent(sessionName), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: sessionName, scenes, audio_manifest: library })
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      alert('Save failed: ' + (data.error || res.status));
+      return;
+    }
+    _dirty = false;
+    for (const scene of scenes)
+      for (const t of (scene.triggers || []))
+        _upsertTriggerToLibrary(t);
+    _saveGlobalLibrary();
+    renderTriggerLibrary();
+    _syncPack();
+  } catch (e) {
+    alert('Save failed — server unreachable: ' + e.message);
   }
-  _dirty = false;
-  _syncPack();
 }
 
 async function _syncPack() {
@@ -562,7 +597,7 @@ function renderEditor() {
     <div class="spotify-drop-zone ${scene.spotify.uri ? 'has-uri' : ''}"
          ondragover="if(_dragSpotifyUri){event.preventDefault();this.classList.add('drop-active');}"
          ondragleave="this.classList.remove('drop-active')"
-         ondrop="event.preventDefault();this.classList.remove('drop-active');if(_dragSpotifyUri){updateScene('spotify',{...scenes[activeSceneIndex].spotify,uri:_dragSpotifyUri});}">
+         ondrop="event.preventDefault();this.classList.remove('drop-active');if(_dragSpotifyUri){updateScene('spotify',{...scenes[activeSceneIndex].spotify,uri:_dragSpotifyUri});renderEditor();}">
       ${scene.spotify.uri
         ? `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${loadSpotifyPlaylists().find(p=>p.uri===scene.spotify.uri)?.name || scene.spotify.uri}</span>
            <button class="icon" style="flex-shrink:0;margin-left:8px;" onclick="updateScene('spotify',{uri:'',volume:50});renderEditor();">×</button>`
@@ -615,6 +650,60 @@ function renderTriggerCard(t, i) {
         </select>
       </div>
     </div>`;
+}
+
+// ── Trigger Library ───────────────────────────────────────────────────────────
+
+function _upsertTriggerToLibrary(t) {
+  if (!t.sound && !t.govee_flash) return;
+  const existing = triggerLibrary.find(e => e.name === t.name);
+  if (existing) {
+    existing.sound = t.sound;
+    existing.govee_flash = t.govee_flash;
+  } else {
+    triggerLibrary.push({ id: `tlib-${Date.now()}`, name: t.name, sound: t.sound, govee_flash: t.govee_flash });
+  }
+}
+
+function applyLibraryTrigger(libId) {
+  if (activeSceneIndex < 0) { alert('Select a scene first.'); return; }
+  const entry = triggerLibrary.find(e => e.id === libId);
+  if (!entry) return;
+  scenes[activeSceneIndex].triggers.push({
+    id: `trigger-${Date.now()}`, name: entry.name,
+    sound: entry.sound || "", govee_flash: entry.govee_flash || null
+  });
+  _dirty = true;
+  renderEditor();
+}
+
+function removeLibraryTrigger(libId) {
+  triggerLibrary = triggerLibrary.filter(e => e.id !== libId);
+  _saveGlobalLibrary();
+  _dirty = true;
+  renderTriggerLibrary();
+}
+
+function renderTriggerLibrary() {
+  const el = document.getElementById('trigger-library-list');
+  if (!el) return;
+  if (triggerLibrary.length === 0) {
+    el.innerHTML = '<div style="color:#444; font-size:0.82em; padding:4px 0;">No triggers yet — save a session to populate the library.</div>';
+    return;
+  }
+  el.innerHTML = triggerLibrary.map(entry => {
+    const soundLabel = entry.sound ? (library[entry.sound]?.source_name || entry.sound) : null;
+    const flashLabel = entry.govee_flash?.ref
+      ? (effects.find(e => e.ref === entry.govee_flash.ref)?.name || entry.govee_flash.ref)
+      : null;
+    const meta = [flashLabel, soundLabel].filter(Boolean).join(' · ');
+    return `<div class="tlib-card">
+      <span class="tlib-name" title="${entry.name.replace(/"/g,'&quot;')}">${entry.name}</span>
+      <span class="tlib-meta" title="${meta}">${meta || '—'}</span>
+      <button class="icon" title="Add to current scene" onclick="applyLibraryTrigger('${entry.id}')">→</button>
+      <button class="icon" title="Remove from library" onclick="removeLibraryTrigger('${entry.id}')">×</button>
+    </div>`;
+  }).join('');
 }
 
 function updateScene(field, value) { _dirty = true; scenes[activeSceneIndex][field] = value; renderScenes(); }

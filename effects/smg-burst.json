@@ -1,0 +1,7 @@
+{
+  "ref": "smg-burst",
+  "name": "SMG Burst",
+  "type": "burst",
+  "color": "#fff0b4",
+  "description": "560ms rapid white-yellow strobe"
+}

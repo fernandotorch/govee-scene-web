@@ -1,6 +1,6 @@
 {
   "ref": "alarm",
-  "name": "Alarm",
+  "name": "Alarm Rotation",
   "type": "ambient",
   "category": "action",
   "color": "#ff4400",
