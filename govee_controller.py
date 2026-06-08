@@ -468,13 +468,17 @@ def _bio_burst():
         (210,   0,  15, 100),
         ( 15,   0,   3, 200),
         ( 70,   0,  10, 300),
-        # Phase 2 — low simmer → compression → rapid red/dark finale → fade (4.3s)
-        (150,   0,  10, 300),   # lower fire: second squish begins
-        (200,   0,  15, 300),   # building
-        (230,   5,  15, 200),   # more intense
-        (180,   0,  12, 150),   # slight ebb
-        (225,   5,  15, 200),   # back up
-        ( 15,   0,   3, 150),   # compression beat
+        # Phase 2 — low simmer → compression → rapid red/dark finale → fade (6.2s)
+        (150,   0,  10, 400),   # lower fire: second squish begins
+        (200,   0,  15, 450),   # building
+        (230,   5,  15, 350),   # peak
+        (175,   0,  12, 300),   # ebb 1
+        (230,   5,  15, 350),   # rise 1
+        (178,   0,  12, 300),   # ebb 2
+        (228,   5,  15, 350),   # rise 2
+        (175,   0,  11, 300),   # ebb 3 (slightly dimmer)
+        (220,   5,  14, 250),   # rise 3
+        ( 15,   0,   3, 200),   # compression beat
         (255,   0,  10,  80),   # SMG-like finale: red
         ( 10,   0,   2,  80),   # dark
         (255,   0,  10,  80),   # red
