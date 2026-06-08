@@ -492,6 +492,9 @@ def _bio_burst():
         ( 80,   0,   3, 400),   # dimmer fade
         ( 10,   0,   2, 400),   # dark
         ( 30,   0,   1, 500),   # nearly done
+        (  8,   0,   0, 700),   # almost out
+        ( 15,   0,   0, 700),   # last ember
+        (  4,   0,   0, 600),   # gone
     ]
     def _step(n):
         global _burst_timer, _burst_active
