@@ -468,20 +468,30 @@ def _bio_burst():
         (210,   0,  15, 100),
         ( 15,   0,   3, 200),
         ( 70,   0,  10, 300),
-        # Phase 2 — low simmer → rapid red/dark finale → fade (1.8s)
-        (150,   0,  10, 200),   # lower fire: second squish begins
-        (200,   0,  15, 200),   # building
-        (230,   5,  15, 100),   # more intense
-        ( 15,   0,   3, 100),   # compression beat
+        # Phase 2 — low simmer → compression → rapid red/dark finale → fade (4.3s)
+        (150,   0,  10, 300),   # lower fire: second squish begins
+        (200,   0,  15, 300),   # building
+        (230,   5,  15, 200),   # more intense
+        (180,   0,  12, 150),   # slight ebb
+        (225,   5,  15, 200),   # back up
+        ( 15,   0,   3, 150),   # compression beat
         (255,   0,  10,  80),   # SMG-like finale: red
         ( 10,   0,   2,  80),   # dark
         (255,   0,  10,  80),   # red
         ( 10,   0,   2,  80),   # dark
-        (230,   0,   8,  80),   # red dimming
+        (240,   0,   8,  80),   # red dimming
+        ( 10,   0,   2,  80),   # dark
+        (220,   0,   8,  80),   # red dimmer
+        ( 10,   0,   2,  80),   # dark
+        (200,   0,   6, 100),   # slower
+        ( 10,   0,   2, 100),   # dark
+        (170,   0,   5, 120),   # dimmer
         ( 10,   0,   2, 120),   # dark
-        (160,   0,   6, 150),   # red dimmer
-        ( 10,   0,   2, 200),   # dark
-        ( 60,   0,   4, 300),   # fade out
+        (130,   0,   4, 300),   # fade
+        ( 10,   0,   2, 350),   # dark
+        ( 80,   0,   3, 400),   # dimmer fade
+        ( 10,   0,   2, 400),   # dark
+        ( 30,   0,   1, 500),   # nearly done
     ]
     def _step(n):
         global _burst_timer, _burst_active
