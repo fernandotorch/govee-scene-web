@@ -450,6 +450,36 @@ def _flamethrower_burst():
         _burst_timer = threading.Timer(0.10, _do_gap); _burst_timer.start()
     _run_flicker(_second)
 
+
+def _bio_burst():
+    global _burst_timer, _burst_gen, _burst_active
+    if _burst_timer is not None: _burst_timer.cancel()
+    _burst_gen += 1; gen = _burst_gen
+    _burst_active = True; _on()
+    steps = [
+        (130,   0,  15, 200),
+        (180,   5,  20, 200),
+        (230,  10,  25, 200),
+        ( 15,   0,   5, 100),
+        (255, 180, 160, 100),
+        (255,   0,  10, 100),
+        ( 20,   0,   5, 100),
+        (210,   0,  15, 100),
+        ( 15,   0,   3, 200),
+        ( 70,   0,  10, 300),
+    ]
+    def _step(n):
+        global _burst_timer, _burst_active
+        if _burst_gen != gen: return
+        if n >= len(steps):
+            _burst_active = False; _burst_end(); return
+        r, g, b, delay = steps[n]
+        _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
+        _burst_timer = threading.Timer(delay / 1000.0, lambda: _step(n + 1))
+        _burst_timer.start()
+    _step(0)
+
+
 BURST_DEFS = {
     'white-burst':    lambda: _fire_burst(255, 255, 255, 0.20),
     'orange-burst':   lambda: _fire_burst(255, 100,   0, 0.30),
@@ -458,6 +488,7 @@ BURST_DEFS = {
     'smg-burst':      _smg_burst,
     'pulse-rifle':    _pulse_rifle_burst,
     'flamethrower':   _flamethrower_burst,
+    'bio-burst':      _bio_burst,
 }
 
 
