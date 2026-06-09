@@ -129,7 +129,9 @@
   <button class="tool" onclick="newSession()">New</button>
   <button class="tool" onclick="openSessionList()">Open</button>
   <button class="tool" onclick="saveSession()">Save</button>
-  <span id="sync-status" style="font-size:0.8em; color:#555; margin-left:8px;"></span><div id="sync-progress-container" style="display:none; width:100px; height:4px; background:#eee; margin-left:8px; vertical-align:middle;"><div id="sync-progress-bar" style="width:0%; height:100%; background:#4a9; transition:width 0.3s;"></div></div>
+  <button onclick="reloadEffects()" title="Reload effect definitions from effect_defs.py without restarting the server" style="margin-left:8px">⟳ Reload Effects</button>
+  <span id="sync-status"
+ style="font-size:0.8em; color:#555; margin-left:8px;"></span><div id="sync-progress-container" style="display:none; width:100px; height:4px; background:#eee; margin-left:8px; vertical-align:middle;"><div id="sync-progress-bar" style="width:0%; height:100%; background:#4a9; transition:width 0.3s;"></div></div>
 </div>
 
 <div id="main-layout">
@@ -320,6 +322,17 @@ async function init() {
   triggerLibrary = _loadGlobalLibrary();
   renderScenes(); renderExplorer(); renderEffects();
   renderSpotifyList(); renderTriggerLibrary();
+}
+
+async function reloadEffects() {
+  const res = await fetch('/api/reload', { method: 'POST' });
+  const data = await res.json();
+  if (data.ok) {
+    await init();
+    alert('Effects reloaded: ' + data.scenes + ' scenes, ' + data.bursts + ' bursts');
+  } else {
+    alert('Reload failed');
+  }
 }
 
 // ── SFX path editing ──────────────────────────────────────────────────────────

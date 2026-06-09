@@ -5,8 +5,8 @@
       "ambient": "freesound-space-spaceship",
       "ambient_volume": 50,
       "govee_effect": {
-        "ref": "flicker-slow",
-        "definition": {}
+        "definition": {},
+        "ref": "flicker-slow"
       },
       "id": "scene-1780922195782",
       "name": "Montero",
@@ -20,8 +20,8 @@
       "ambient": "freesound-space-spaceship_quiet",
       "ambient_volume": 50,
       "govee_effect": {
-        "definition": {},
-        "ref": "cronus"
+        "ref": "calm-blue",
+        "definition": {}
       },
       "id": "scene-1780922205437",
       "name": "Cronus sleeping",
@@ -109,6 +109,14 @@
           "id": "trigger-1780930776565",
           "name": "flamethrower",
           "sound": "freesound-guns and explosions-flamethrower"
+        },
+        {
+          "govee_flash": {
+            "ref": "bio-burst"
+          },
+          "id": "trigger-1780937976732",
+          "name": "bloodburst",
+          "sound": "freesound-neomorph"
         }
       ]
     },
@@ -230,10 +238,20 @@
       "file": "freesound/guns and explosions/pulse_rifle.ogg",
       "source_name": "pulse_rifle.ogg"
     },
+    "freesound-neomorph": {
+      "duration_ms": 0,
+      "file": "freesound/freesound-neomorph.ogg",
+      "source_name": "freesound-neomorph.ogg"
+    },
     "freesound-space-freesound-space-spaceship_alarm": {
       "duration_ms": 0,
       "file": "freesound/space/freesound-space-spaceship_alarm.ogg",
       "source_name": "freesound-space-spaceship_alarm.ogg"
+    },
+    "freesound-space-freesound-space-spaceship_alarm_pause": {
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship_alarm_pause.ogg",
+      "source_name": "freesound-space-spaceship_alarm_pause.ogg"
     },
     "freesound-space-spaceship": {
       "duration_ms": 0,
@@ -249,11 +267,6 @@
       "duration_ms": 0,
       "file": "freesound/space/freesound-space-spaceship_quiet.ogg",
       "source_name": "freesound-space-spaceship_quiet.ogg"
-    },
-    "freesound-space-freesound-space-spaceship_alarm_pause": {
-      "duration_ms": 0,
-      "file": "freesound/space/freesound-space-spaceship_alarm_pause.ogg",
-      "source_name": "freesound-space-spaceship_alarm_pause.ogg"
     }
   }
 }

@@ -128,459 +128,6 @@ def _run(fn, *args):
 
 # ── Effects ───────────────────────────────────────────────────────────────────
 
-def _police_loop():
-    _on(); _bright(100)
-    session = _session_id
-    while not _stop.is_set() and _session_id == session:
-        _seg_colors([(255, 0, 0, LEFT_MASK), (0, 40, 255, RIGHT_MASK)])
-        _stop.wait(0.25)
-        _seg_colors([(0, 40, 255, LEFT_MASK), (255, 0, 0, RIGHT_MASK)])
-        _stop.wait(0.25)
-
-def _club_loop():
-    PINK = (255, 0, 180); GREEN = (0, 255, 80); COLORS = [PINK, GREEN]
-    PULSE_HZ = 2.0; TICK = 0.15; _on(); t0 = time.time()
-    session = _session_id
-    while not _stop.is_set() and _session_id == session:
-        now = time.time()
-        l_color = random.choice(COLORS); r_color = PINK if l_color is GREEN else GREEN
-        v = (math.sin(2 * math.pi * PULSE_HZ * (now - t0)) + 1) / 2
-        scale = 0.55 + 0.45 * v
-        ls = tuple(round(c * scale) for c in l_color)
-        rs = tuple(round(c * scale) for c in r_color)
-        _seg_colors([(*ls, LEFT_MASK), (*rs, RIGHT_MASK)])
-        _stop.wait(TICK)
-
-def _flicker_loop(r, g, b, on_min=5.0, on_max=10.0, cut_min=0.6, cut_max=1.0):
-    _on(); _seg_colors([(r, g, b, LEFT_MASK), (r, g, b, RIGHT_MASK)])
-    def bar_loop(mask):
-        session = _session_id
-        while not _stop.is_set() and _session_id == session:
-            _seg_colors([(r, g, b, mask)]); _stop.wait(random.uniform(on_min, on_max))
-            if _stop.is_set() or _session_id != session: break
-            cut = random.uniform(cut_min, cut_max)
-            while cut > 0.05 and not _stop.is_set() and _session_id == session:
-                _seg_colors([(2, 2, 2, mask)]); _stop.wait(cut)
-                if _stop.is_set() or _session_id != session: break
-                _seg_colors([(r, g, b, mask)]); _stop.wait(cut * random.uniform(0.2, 0.4))
-                cut *= random.uniform(0.35, 0.55)
-            if not _stop.is_set(): _seg_colors([(r, g, b, mask)])
-    left = threading.Thread(target=bar_loop, args=(LEFT_MASK,), daemon=True)
-    right = threading.Thread(target=bar_loop, args=(RIGHT_MASK,), daemon=True)
-    left.start(); right.start(); _stop.wait(); left.join(timeout=1); right.join(timeout=1)
-
-def _flicker_split_loop(r1, g1, b1, r2, g2, b2, on_min=5.0, on_max=10.0, cut_min=0.6, cut_max=1.0):
-    _on(); _seg_colors([(r1, g1, b1, LEFT_MASK), (r2, g2, b2, RIGHT_MASK)])
-    def bar_loop(r, g, b, mask):
-        session = _session_id
-        while not _stop.is_set() and _session_id == session:
-            _seg_colors([(r, g, b, mask)]); _stop.wait(random.uniform(on_min, on_max))
-            if _stop.is_set() or _session_id != session: break
-            cut = random.uniform(cut_min, cut_max)
-            while cut > 0.05 and not _stop.is_set() and _session_id == session:
-                _seg_colors([(2, 2, 2, mask)]); _stop.wait(cut)
-                if _stop.is_set() or _session_id != session: break
-                _seg_colors([(r, g, b, mask)]); _stop.wait(cut * random.uniform(0.2, 0.4))
-                cut *= random.uniform(0.35, 0.55)
-            if not _stop.is_set(): _seg_colors([(r, g, b, mask)])
-    left = threading.Thread(target=bar_loop, args=(r1, g1, b1, LEFT_MASK), daemon=True)
-    right = threading.Thread(target=bar_loop, args=(r2, g2, b2, RIGHT_MASK), daemon=True)
-    left.start(); right.start(); _stop.wait(); left.join(timeout=1); right.join(timeout=1)
-
-def _alarm_loop():
-    _on(); _bright(100)
-    session = _session_id
-    while not _stop.is_set() and _session_id == session:
-        _seg_colors([(255, 55, 0, LEFT_MASK), (10, 2, 0, RIGHT_MASK)])
-        _stop.wait(0.25)
-        _seg_colors([(10, 2, 0, LEFT_MASK), (255, 55, 0, RIGHT_MASK)])
-        _stop.wait(0.25)
-
-def _brave_sea_loop():
-    _on(); _bright(100); t = 0.0
-    session = _session_id
-    while not _stop.is_set() and _session_id == session:
-        t += 0.6  
-        packet = []
-        crest_base = (t % 3.5) - 1.5
-        splash = (random.random() < 0.15)
-        for i in range(10):
-            mask = 1 << i
-            idx = i % 5
-            crest_pos = crest_base if i < 5 else ((t * 1.1 + 1.5) % 3.2) - 1.5
-            dist = abs(idx - crest_pos)
-            r, g, b = (0, 2, 30)
-            if dist < 1.0:
-                v = max(0.0, 1.0 - dist)
-                r = int(r + (200 - r) * v)
-                g = int(g + (240 - g) * v)
-                b = int(b + (255 - b) * v)
-            if splash and random.random() < 0.4: r, g, b = (230, 250, 255)
-            packet.append((r, g, b, mask))
-        
-        _seg_colors(packet) # Stable single packet
-        _stop.wait(0.12)
-
-def _torch_fire_loop():
-    _on(); _bright(100); t = 0.0
-    session = _session_id
-    while not _stop.is_set() and _session_id == session:
-        t += 0.25
-        packet = []
-        wind = 0.8 * math.sin(t * 1.2) + 0.4 * math.sin(t * 2.8)
-        for h in range(5):
-            if h == 0:   br, bg, bb = (180, 15, 0)
-            elif h == 1: br, bg, bb = (220, 55, 0)
-            elif h == 2: br, bg, bb = (255, 120, 0)
-            elif h == 3: br, bg, bb = (255, 190, 40)
-            else:        br, bg, bb = (255, 240, 150)
-            for is_right in [False, True]:
-                mask = (1 << (h + 5)) if is_right else (1 << h)
-                bar_phase = 2.5 if is_right else 0.0
-                flicker = math.sin(t * 2.5 + bar_phase + h * 0.8)
-                sway = wind if is_right else -wind
-                if h >= 3:
-                    snap = 0.0 if ((is_right and wind < -0.5) or (not is_right and wind > 0.5)) else 1.0
-                    agitation = (flicker * 0.7 + 0.3) * snap
-                    intensity = agitation * (1.0 + abs(sway) * 0.5)
-                else:
-                    glow = (flicker * 0.3 + 0.7) 
-                    intensity = glow * (0.9 + abs(sway) * 0.1)
-                if h >= 2 and random.random() < 0.12: intensity *= random.uniform(1.3, 1.7)
-                r, g, b = int(br * intensity), int(bg * intensity), int(bb * intensity)
-                packet.append((r, g, b, mask))
-        
-        # Combined packet to prevent congestion
-        _seg_colors(packet)
-        _stop.wait(0.12)
-
-
-def _purple_evil_loop():
-    _on(); _bright(100); t = 0.0
-    session = _session_id
-    while not _stop.is_set() and _session_id == session:
-        t += 0.3
-        packet = []
-        
-        # SLIGHTLY REDUCED TERROR CHANCE: 11% (was 15%)
-        if random.random() < 0.06:
-            roll = random.random()
-            
-            # Weights remain the same (Sequence-heavy)
-            if roll < 0.40:
-                _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
-                _stop.wait(random.uniform(0.3, 0.6))
-                if _stop.is_set() or _session_id != session: break
-                _seg_colors([(255, 0, 0, LEFT_MASK | RIGHT_MASK)])
-                _stop.wait(random.uniform(0.2, 0.4))
-                continue
-            elif roll < 0.70:
-                _seg_colors([(255, 0, 0, LEFT_MASK | RIGHT_MASK)])
-                _stop.wait(random.uniform(0.15, 0.3))
-                if _stop.is_set() or _session_id != session: break
-                _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
-                _stop.wait(random.uniform(0.4, 0.8))
-                continue
-            elif roll < 0.90:
-                _seg_colors([(255, 0, 0, LEFT_MASK | RIGHT_MASK)])
-                _stop.wait(random.uniform(0.2, 0.5))
-                continue
-            else:
-                _seg_colors([(0, 0, 0, LEFT_MASK | RIGHT_MASK)])
-                _stop.wait(random.uniform(0.3, 0.7))
-                continue
-
-        wind = 0.8 * math.sin(t * 1.2) + 0.4 * math.sin(t * 2.8)
-        
-        for h in range(5):
-            if h == 0:   br, bg, bb = (40, 0, 90)    # Deep Purple Base
-            elif h == 1: br, bg, bb = (100, 0, 200)  # Vibrant Purple
-            elif h == 2: br, bg, bb = (255, 0, 150)  # Neon Magenta
-            elif h == 3: br, bg, bb = (230, 230, 255) # Cold White
-            else:        br, bg, bb = (255, 10, 0)   # Crackling Red Top
-            
-            for is_right in [False, True]:
-                mask = (1 << (h + 5)) if is_right else (1 << h)
-                bar_phase = 2.5 if is_right else 0.0
-                flicker = math.sin(t * 2.5 + bar_phase + h * 0.8)
-                sway = wind if is_right else -wind
-                
-                if h >= 3:
-                    snap = 0.0 if ((is_right and wind < -0.5) or (not is_right and wind > 0.5)) else 1.0
-                    agitation = (flicker * 0.7 + 0.3) * snap
-                    intensity = agitation * (1.0 + abs(sway) * 0.5)
-                else:
-                    glow = (flicker * 0.3 + 0.7) 
-                    intensity = glow * (0.9 + abs(sway) * 0.1)
-                
-                if h >= 2 and random.random() < 0.12: intensity *= random.uniform(1.3, 1.7)
-                
-                r, g, b = int(br * intensity), int(bg * intensity), int(bb * intensity)
-                packet.append((r, g, b, mask))
-        
-        _seg_colors(packet)
-        _stop.wait(0.12)
-
-
-def _disian_loop():
-    _on(); phase = 0.0
-    session = _session_id
-    while not _stop.is_set() and _session_id == session:
-        phase += 0.04; v = (math.sin(phase) + 1) / 2
-        if random.random() < 0.015:
-            _color(200, 210, 255); _bright(85); _stop.wait(random.uniform(0.04, 0.18))
-        r = int(65 + v * 45); b = int(105 + v * 95)
-        _color(r, 0, b); _bright(int(22 + v * 58)); _stop.wait(0.08)
-
-
-def _amber_breathe_loop():
-    _on(); _bright(100)
-    session = _session_id; t0 = time.time()
-    while not _stop.is_set() and _session_id == session:
-        v = (math.sin(2 * math.pi * (time.time() - t0) / 12.0) + 1) / 2
-        r = int(200 + 55 * v)
-        g = int(90 + 120 * v)
-        b = int(130 * v)
-        _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
-        _stop.wait(0.05)
-
-
-def _harneven_loop():
-    on_c = (210, 215, 255); cut_c = (160, 0, 255)
-    _on(); _seg_colors([(on_c[0], on_c[1], on_c[2], LEFT_MASK | RIGHT_MASK)])
-    def bar_loop(mask):
-        session = _session_id
-        while not _stop.is_set() and _session_id == session:
-            _seg_colors([(*on_c, mask)]); _stop.wait(random.uniform(20.0, 45.0))
-            if _stop.is_set() or _session_id != session: break
-            cut = random.uniform(0.1, 0.4)
-            while cut > 0.03 and not _stop.is_set() and _session_id == session:
-                _seg_colors([(*cut_c, mask)]); _stop.wait(cut)
-                if _stop.is_set() or _session_id != session: break
-                _seg_colors([(*on_c, mask)]); _stop.wait(cut * random.uniform(0.2, 0.4))
-                cut *= random.uniform(0.35, 0.55)
-            if not _stop.is_set(): _seg_colors([(*on_c, mask)])
-    left = threading.Thread(target=bar_loop, args=(LEFT_MASK,), daemon=True)
-    right = threading.Thread(target=bar_loop, args=(RIGHT_MASK,), daemon=True)
-    left.start(); right.start(); _stop.wait(); left.join(timeout=1); right.join(timeout=1)
-
-
-def _static_loop(r, g, b, brightness=100):
-    _on(); _bright(brightness)
-    session = _session_id
-    while not _stop.is_set() and _session_id == session:
-        _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
-        _stop.wait(2.0)
-
-
-def _draconis_hb_loop(r, g, b):
-    _on(); _bright(100)
-    session = _session_id
-    base = (r // 6, g // 6, b // 6)
-    dub  = (r * 3 // 4, g * 3 // 4, b * 3 // 4)
-    while not _stop.is_set() and _session_id == session:
-        _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
-        _stop.wait(0.10)
-        if _stop.is_set() or _session_id != session: break
-        _seg_colors([(*base, LEFT_MASK | RIGHT_MASK)])
-        _stop.wait(0.18)
-        if _stop.is_set() or _session_id != session: break
-        _seg_colors([(*dub, LEFT_MASK | RIGHT_MASK)])
-        _stop.wait(0.10)
-        if _stop.is_set() or _session_id != session: break
-        _seg_colors([(*base, LEFT_MASK | RIGHT_MASK)])
-        _stop.wait(1.6 + random.uniform(-0.2, 0.4))
-
-
-def _draconis_pulse_loop(r, g, b, period=3.5, min_s=0.12, max_s=0.55):
-    _on(); _bright(100)
-    session = _session_id
-    t0 = time.time()
-    PERIOD = period
-    MIN_S, MAX_S = min_s, max_s
-    while not _stop.is_set() and _session_id == session:
-        v = (math.sin(2 * math.pi * (time.time() - t0) / PERIOD) + 1) / 2
-        s = MIN_S + (MAX_S - MIN_S) * v
-        _seg_colors([(round(r * s), round(g * s), round(b * s), LEFT_MASK | RIGHT_MASK)])
-        _stop.wait(0.05)
-
-
-SCENES = {
-    'off': lambda: (_stop_all(), _off()),
-    'police': lambda: _run(_police_loop),
-    'club': lambda: _run(_club_loop),
-    'flicker': lambda: _run(_flicker_loop, 240, 230, 200),
-    'alarm': lambda: _run(_alarm_loop),
-    'brave-sea': lambda: _run(_brave_sea_loop),
-    'torch-fire': lambda: _run(_torch_fire_loop),
-    'evil': lambda: _run(_purple_evil_loop),
-    'disian': lambda: _run(_disian_loop),
-    'flicker-slow':     lambda: _run(_flicker_loop, 240, 230, 200, 20.0, 45.0, 0.2, 0.5),
-    'flicker-pink':        lambda: _run(_flicker_loop, 255, 0, 180, 20.0, 45.0, 0.2, 0.5),
-    'flicker-chapacabana': lambda: _run(_flicker_split_loop, 0, 60, 255, 160, 0, 255, 4.0, 10.0, 0.2, 0.5),
-    'pelagio':  lambda: _run(_amber_breathe_loop),
-    'harneven': lambda: _run(_harneven_loop),
-    'cronus':           lambda: _run(_static_loop, 165, 195, 255),
-    'draconis':  lambda: _run(_draconis_hb_loop,   80, 200,  10),
-    'autodestruct': lambda: _run(_draconis_pulse_loop, 255, 80, 0, 1.8, 0.05, 1.0),
-}
-
-def _smg_burst():
-    global _burst_timer, _burst_gen, _burst_active
-    if _burst_timer is not None: _burst_timer.cancel()
-    _burst_gen += 1; gen = _burst_gen
-    _burst_active = True; _on()
-    def _step(n):
-        global _burst_timer, _burst_active
-        if _burst_gen != gen: return
-        if n >= 8:
-            _burst_active = False; _burst_end(); return
-        color = (255, 240, 180) if n % 2 == 0 else (255, 150, 10)
-        _seg_colors([(color[0], color[1], color[2], LEFT_MASK | RIGHT_MASK)])
-        _burst_timer = threading.Timer(0.105, lambda: _step(n + 1))
-        _burst_timer.start()
-    _step(0)
-
-def _pulse_rifle_burst():
-    global _burst_timer, _burst_gen, _burst_active
-    if _burst_timer is not None: _burst_timer.cancel()
-    _burst_gen += 1; gen = _burst_gen
-    _burst_active = True; _on()
-    _seg_colors([(30, 90, 255, LEFT_MASK | RIGHT_MASK)])   # blue charge
-    def _boom():
-        global _burst_timer, _burst_active
-        if _burst_gen != gen: return
-        _seg_colors([(230, 255, 255, LEFT_MASK | RIGHT_MASK)])  # white-cyan crack
-        def _afterglow():
-            global _burst_timer, _burst_active
-            if _burst_gen != gen: return
-            _seg_colors([(0, 255, 80, LEFT_MASK | RIGHT_MASK)])    # green afterglow
-            def _done():
-                global _burst_active
-                if _burst_gen != gen: return
-                _burst_active = False; _burst_end()
-            _burst_timer = threading.Timer(0.20, _done); _burst_timer.start()
-        _burst_timer = threading.Timer(0.15, _afterglow); _burst_timer.start()
-    _burst_timer = threading.Timer(0.60, _boom); _burst_timer.start()
-
-def _flamethrower_burst():
-    global _burst_timer, _burst_gen, _burst_active
-    if _burst_timer is not None: _burst_timer.cancel()
-    _burst_gen += 1; gen = _burst_gen
-    _burst_active = True; _on()
-    flicker = [
-        (255,  80,  0), (255, 160, 20), (255,  55,  0),
-        (255, 175, 25), (255,  65,  0), (255, 145, 10),
-        (220,  45,  0), (255, 110,  5),
-    ]
-    def _run_flicker(on_done, speed=1.0):
-        _seg_colors([(255, 220, 80, LEFT_MASK | RIGHT_MASK)])   # ignition flash
-        def _step(n):
-            global _burst_timer
-            if _burst_gen != gen: return
-            if n >= len(flicker):
-                on_done(); return
-            _seg_colors([(flicker[n][0], flicker[n][1], flicker[n][2], LEFT_MASK | RIGHT_MASK)])
-            _burst_timer = threading.Timer(0.115 * speed, lambda: _step(n + 1)); _burst_timer.start()
-        _burst_timer = threading.Timer(0.08 * speed, lambda: _step(0)); _burst_timer.start()
-    def _second():
-        if _burst_gen != gen: return
-        def _do_gap():
-            if _burst_gen != gen: return
-            _seg_colors([(20, 5, 0, LEFT_MASK | RIGHT_MASK)])   # near-dark gap
-            def _start():
-                if _burst_gen != gen: return
-                def _done():
-                    global _burst_active
-                    if _burst_gen != gen: return
-                    _seg_colors([(150, 18, 0, LEFT_MASK | RIGHT_MASK)])  # dying ember
-                    def _end():
-                        global _burst_active
-                        if _burst_gen != gen: return
-                        _burst_active = False; _burst_end()
-                    _burst_timer = threading.Timer(0.375, _end); _burst_timer.start()
-                _run_flicker(_done, speed=1.5)
-            _burst_timer = threading.Timer(0.28, _start); _burst_timer.start()
-        _burst_timer = threading.Timer(0.10, _do_gap); _burst_timer.start()
-    _run_flicker(_second)
-
-
-def _bio_burst():
-    global _burst_timer, _burst_gen, _burst_active
-    if _burst_timer is not None: _burst_timer.cancel()
-    _burst_gen += 1; gen = _burst_gen
-    _burst_active = True; _on()
-    steps = [
-        # Phase 1 — pressure build → white-pink burst → first decay (1.6s)
-        (130,   0,  15, 200),
-        (180,   5,  20, 200),
-        (230,  10,  25, 200),
-        ( 15,   0,   5, 100),
-        (255, 180, 160, 100),
-        (255,   0,  10, 100),
-        ( 20,   0,   5, 100),
-        (210,   0,  15, 100),
-        ( 15,   0,   3, 200),
-        ( 70,   0,  10, 300),
-        # Phase 2 — low simmer → compression → rapid red/dark finale → fade (6.2s)
-        (150,   0,  10, 400),   # lower fire: second squish begins
-        (200,   0,  15, 450),   # building
-        (230,   5,  15, 350),   # peak
-        (175,   0,  12, 300),   # ebb 1
-        (230,   5,  15, 350),   # rise 1
-        (178,   0,  12, 300),   # ebb 2
-        (228,   5,  15, 350),   # rise 2
-        (175,   0,  11, 300),   # ebb 3 (slightly dimmer)
-        (220,   5,  14, 250),   # rise 3
-        ( 15,   0,   3, 200),   # compression beat
-        (255,   0,  10,  80),   # SMG-like finale: red
-        ( 10,   0,   2,  80),   # dark
-        (255,   0,  10,  80),   # red
-        ( 10,   0,   2,  80),   # dark
-        (240,   0,   8,  80),   # red dimming
-        ( 10,   0,   2,  80),   # dark
-        (220,   0,   8,  80),   # red dimmer
-        ( 10,   0,   2,  80),   # dark
-        (200,   0,   6, 100),   # slower
-        ( 10,   0,   2, 100),   # dark
-        (170,   0,   5, 120),   # dimmer
-        ( 10,   0,   2, 120),   # dark
-        (130,   0,   4, 300),   # fade
-        ( 10,   0,   2, 350),   # dark
-        ( 80,   0,   3, 400),   # dimmer fade
-        ( 10,   0,   2, 400),   # dark
-        ( 30,   0,   1, 500),   # nearly done
-        (  8,   0,   0, 700),   # almost out
-        ( 15,   0,   0, 700),   # last ember
-        (  4,   0,   0, 600),   # nearly gone
-        ( 10,   0,   0, 700),   # final flicker
-        (  2,   0,   0, 700),   # gone
-    ]
-    def _step(n):
-        global _burst_timer, _burst_active
-        if _burst_gen != gen: return
-        if n >= len(steps):
-            _burst_active = False; _burst_end(); return
-        r, g, b, delay = steps[n]
-        _seg_colors([(r, g, b, LEFT_MASK | RIGHT_MASK)])
-        _burst_timer = threading.Timer(delay / 1000.0, lambda: _step(n + 1))
-        _burst_timer.start()
-    _step(0)
-
-
-BURST_DEFS = {
-    'white-burst':    lambda: _fire_burst(255, 255, 255, 0.20),
-    'orange-burst':   lambda: _fire_burst(255, 100,   0, 0.30),
-    'purple-pulse':   lambda: _fire_burst(180,   0, 255, 0.30),
-    'fire-spark':     lambda: _fire_burst(255, 200,  50, 0.30),
-    'smg-burst':      _smg_burst,
-    'pulse-rifle':    _pulse_rifle_burst,
-    'flamethrower':   _flamethrower_burst,
-    'bio-burst':      _bio_burst,
-    'fingers-reveal': lambda: _fire_burst(160, 0, 255, 2.0),
-}
-
-
 def _burst_end():
     restore = []
     if _last_left:
@@ -608,6 +155,12 @@ def _fire_burst(r, g, b, duration):
             _burst_end()
     _burst_timer = threading.Timer(duration, _timed_off)
     _burst_timer.start()
+
+import importlib
+import effect_defs as _effect_defs
+_effect_defs._init()
+SCENES = _effect_defs.SCENES
+BURST_DEFS = _effect_defs.BURST_DEFS
 
 # ── Studio Logic ──────────────────────────────────────────────────────────────
 
@@ -669,6 +222,15 @@ def preview_burst(ref):
         return jsonify({"error": "unknown burst ref"}), 404
     fn()
     return jsonify({"ok": True})
+
+@app.route("/api/reload", methods=["POST"])
+def reload_effects():
+    global SCENES, BURST_DEFS
+    importlib.reload(_effect_defs)
+    _effect_defs._init()
+    SCENES = _effect_defs.SCENES
+    BURST_DEFS = _effect_defs.BURST_DEFS
+    return jsonify({"ok": True, "scenes": len(SCENES), "bursts": len(BURST_DEFS)})
 
 @app.route("/api/sfx/config", methods=["GET", "POST"])
 def sfx_config():
@@ -891,6 +453,19 @@ def list_packs():
     return jsonify([{"filename": f, "display_name": f.replace('.zip', '')} for f in files])
 
 # ── Entry point ───────────────────────────────────────────────────────────────
+
+if __name__ == '__main__':
+    print('SFX_DIR:', SFX_DIR)
+    print('Discovering Govee H6047...')
+    if _device_ip: print('Device found at', _device_ip)
+    try:
+        local_ip = subprocess.check_output(['hostname', '-I'], text=True).split()[0]
+    except Exception: local_ip = 'localhost'
+    print('\n' + ('─' * 40))
+    print('  Lighting Lab: http://' + local_ip + ':5000')
+    print('  Studio:       http://' + local_ip + ':5000/studio')
+    print(('─' * 40) + '\n')
+    app.run(host='0.0.0.0', port=5000, use_reloader=False, threaded=True)
 
 if __name__ == '__main__':
     print('SFX_DIR:', SFX_DIR)

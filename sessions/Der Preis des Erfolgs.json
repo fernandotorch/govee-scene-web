@@ -1,0 +1,215 @@
+{
+  "name": "Der Preis des Erfolgs",
+  "scenes": [
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "calm-blue"
+      },
+      "id": "scene-1780939380412",
+      "name": "Police station",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/6sWIrWnwm2YL45BpHCKSwC?si=lrpDAvISR3etDZEbMWDZfg",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "ref": "rich-district",
+        "definition": {}
+      },
+      "id": "scene-1780939380708",
+      "name": "Crime scene",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/4JQYyRP8hFGWAw5HBW1Owr?si=BRaNvE38Qm6qpURE1bPbWw",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "risties"
+      },
+      "id": "scene-1780939398058",
+      "name": "Ristie interrogations",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/1bKIgpLiVrZPrAwc4jxr6e?si=8K2SIzdwSxGPwxD3JJw-Bg",
+        "volume": 50
+      },
+      "triggers": [
+        {
+          "id": "trigger-1780990466499",
+          "name": "Finger's reveal",
+          "sound": "",
+          "govee_flash": {
+            "ref": "rose-pulse"
+          }
+        }
+      ]
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "corp-lab"
+      },
+      "id": "scene-1780939405564",
+      "name": "Harneven's Lab",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/6sWIrWnwm2YL45BpHCKSwC?si=lrpDAvISR3etDZEbMWDZfg",
+        "volume": 50
+      },
+      "triggers": [
+        {
+          "id": "trigger-1780990483701",
+          "name": "Finger's reveal",
+          "sound": "",
+          "govee_flash": {
+            "ref": "rose-pulse"
+          }
+        }
+      ]
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "neon-motel"
+      },
+      "id": "scene-1780939437965",
+      "name": "Assault at Chapacabana",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/37i9dQZF1DX661EjJOj3Tu?si=uVF2fh11QaKzUXx4Bxg6fg",
+        "volume": 50
+      },
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1780940155818",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1780940158213",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "id": "trigger-1780990499839",
+          "name": "Finger's reveal",
+          "sound": "",
+          "govee_flash": {
+            "ref": "rose-pulse"
+          }
+        }
+      ]
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "neon-motel"
+      },
+      "id": "scene-1780939411886",
+      "name": "Fingers",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/6sWIrWnwm2YL45BpHCKSwC?si=lrpDAvISR3etDZEbMWDZfg",
+        "volume": 50
+      },
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1780940169053",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1780940170343",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "id": "trigger-1780990496850",
+          "name": "Finger's reveal",
+          "sound": "",
+          "govee_flash": {
+            "ref": "rose-pulse"
+          }
+        }
+      ]
+    }
+  ],
+  "audio_manifest": {
+    "freesound-guns and explosions-autofire": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/autofire.ogg",
+      "source_name": "autofire.ogg"
+    },
+    "freesound-guns and explosions-flamethrower": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/flamethrower.ogg",
+      "source_name": "flamethrower.ogg"
+    },
+    "freesound-guns and explosions-pistol": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/freesound-guns and explosions-pistol.ogg",
+      "source_name": "freesound-guns and explosions-pistol.ogg"
+    },
+    "freesound-guns and explosions-pulse_rifle": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/pulse_rifle.ogg",
+      "source_name": "pulse_rifle.ogg"
+    },
+    "freesound-neomorph": {
+      "duration_ms": 0,
+      "file": "freesound/freesound-neomorph.ogg",
+      "source_name": "freesound-neomorph.ogg"
+    },
+    "freesound-space-freesound-space-spaceship_alarm": {
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship_alarm.ogg",
+      "source_name": "freesound-space-spaceship_alarm.ogg"
+    },
+    "freesound-space-freesound-space-spaceship_alarm_pause": {
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship_alarm_pause.ogg",
+      "source_name": "freesound-space-spaceship_alarm_pause.ogg"
+    },
+    "freesound-space-spaceship": {
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship.ogg",
+      "source_name": "freesound-space-spaceship.ogg"
+    },
+    "freesound-space-spaceship_alarm.aiff": {
+      "duration_ms": 0,
+      "file": "freesound-space-spaceship_alarm.ogg",
+      "source_name": "freesound-space-spaceship_alarm.ogg"
+    },
+    "freesound-space-spaceship_quiet": {
+      "duration_ms": 0,
+      "file": "freesound/space/freesound-space-spaceship_quiet.ogg",
+      "source_name": "freesound-space-spaceship_quiet.ogg"
+    }
+  }
+}
