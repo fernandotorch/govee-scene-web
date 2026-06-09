@@ -99,6 +99,9 @@
   #modal { background: var(--panel); border: 1px solid var(--border); padding: 24px; border-radius: 8px; width: 400px; }
 
 
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2a2a2a; color: #ccc; padding: 8px 16px; border-radius: 6px; font-size: 0.85em; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 2000; }
+  #toast.show { opacity: 1; }
+
 /* Right panel sub-sections — all equal height, all scrollable */
 #spotify-section, #ambient-section, #sfx-section, #bursts-section {
   flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
@@ -328,14 +331,23 @@ async function init() {
   renderSpotifyList(); renderTriggerLibrary();
 }
 
+let _toastTimer = null;
+function _toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
 async function reloadEffects() {
   const res = await fetch('/api/reload', { method: 'POST' });
   const data = await res.json();
   if (data.ok) {
     await init();
-    alert('Effects reloaded: ' + data.scenes + ' scenes, ' + data.bursts + ' bursts');
+    _toast('Effects reloaded: ' + data.scenes + ' scenes, ' + data.bursts + ' bursts');
   } else {
-    alert('Reload failed');
+    _toast('Reload failed');
   }
 }
 
@@ -956,5 +968,6 @@ function onLightDrop(e) {
 
 init();
 </script>
+<div id="toast"></div>
 </body>
 </html>
