@@ -259,7 +259,7 @@ def _rich_district_loop():
             g = int(80 * v)
             b = int(180 - 90 * v)
             if now >= next_flicker:
-                cut = random.uniform(0.2, 0.5)
+                cut = random.uniform(0.05, 0.12)
                 _gc._seg_colors([(0, 0, 0, _gc.LEFT_MASK | _gc.RIGHT_MASK)])
                 _gc._stop.wait(cut)
                 if _gc._stop.is_set() or _gc._session_id != session: break
@@ -485,7 +485,7 @@ SCENES = {
     'disian': lambda: _gc._run(_disian_loop),
     'flicker-slow':     lambda: _gc._run(_flicker_loop, 240, 230, 200, 20.0, 45.0, 0.2, 0.5),
     'flicker-pink':        lambda: _gc._run(_flicker_loop, 255, 0, 180, 20.0, 45.0, 0.2, 0.5),
-    'neon-motel': lambda: _gc._run(_flicker_split_loop, 0, 60, 255, 160, 0, 255, 4.0, 10.0, 0.2, 0.5),
+    'neon-motel': lambda: _gc._run(_flicker_split_loop, 0, 60, 255, 160, 0, 255, 4.0, 10.0, 0.06, 0.15),
 
     'risties': lambda: _gc._run(_risties_deep_loop),
     'rich-district': lambda: _gc._run(_rich_district_loop),
