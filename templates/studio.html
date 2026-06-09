@@ -47,7 +47,6 @@
   .tlib-card:hover { border-color: #444; }
   .tlib-card .tlib-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ccc; }
   .tlib-card .tlib-meta { color: #555; font-size: 0.78em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .trigger-card.sound-target { border-color: var(--accent); }
   .trigger-card.drop-active { border-color: var(--accent); background: #051a2a; }
   .trigger-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
   .row-label { font-size: 0.7em; text-transform: uppercase; color: #555; letter-spacing: 1px; flex-shrink: 0; width: 36px; }
@@ -236,7 +235,6 @@
 <script>
 let effects = [], library = {}, scenes = [], triggerLibrary = [], activeSceneIndex = -1, sessionName = "New Session";
 let currentPath = "";
-let _soundTarget = null;  // null | trigger-index — which trigger is waiting for a sound pick
 let _dragAudioId = null;  // audio ID being dragged from the SFX panel
 let _dragAudioPath = null;
 let _dragIndex = null;    // scene index being reordered
@@ -581,7 +579,7 @@ function onScenesDrop(e, targetIndex) {
 function onScenesDragEnd(e) { e.currentTarget.classList.remove('dragging'); _dragIndex = null; }
 
 function selectScene(index) {
-  activeSceneIndex = index; _soundTarget = null;
+  activeSceneIndex = index;
   renderScenes(); renderEditor();
 }
 
@@ -644,7 +642,7 @@ function renderEditor() {
 
     <hr class="divider">
     <div class="section-title">Triggers</div>
-    <div id="trigger-list">
+    <div id="trigger-list" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;">
       ${scene.triggers.map((t, i) => renderTriggerCard(t, i)).join('')}
     </div>
     <button style="margin-top:4px;" onclick="addTriggerPrompt()">+ Add Trigger</button>`;
@@ -652,9 +650,8 @@ function renderEditor() {
 
 function renderTriggerCard(t, i) {
   const soundLabel = t.sound ? (library[t.sound]?.source_name || t.sound) : null;
-  const isTarget = _soundTarget === i;
   return `
-    <div class="trigger-card ${isTarget ? 'sound-target' : ''}"
+    <div class="trigger-card"
          ondragover="if(_dragAudioId || _dragEffectRef){event.preventDefault(); this.classList.add('drop-active');}"
          ondragleave="this.classList.remove('drop-active');"
          ondrop="onTriggerDrop(event, ${i}); this.classList.remove('drop-active');">
@@ -666,7 +663,6 @@ function renderTriggerCard(t, i) {
       <div class="trigger-row">
         <span class="row-label">Sound</span>
         <span style="flex:1; font-size:0.82em; color:${soundLabel ? '#bbb' : '#444'}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${soundLabel || '—'}</span>
-        <button class="icon ${isTarget ? 'active' : ''}" onclick="setSoundTarget(${i})" title="${isTarget ? 'Now click a file in the library' : 'Pick a sound from the library'}">${isTarget ? '● pick' : 'Set'}</button>
       </div>
       <div class="trigger-row">
         <span class="row-label">Light</span>
@@ -690,6 +686,20 @@ function _upsertTriggerToLibrary(t) {
     existing.govee_flash = t.govee_flash;
   } else {
     triggerLibrary.push({ id: `tlib-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: t.name, sound: t.sound, govee_flash: t.govee_flash });
+  }
+}
+
+function previewLibraryTrigger(libId) {
+  const entry = triggerLibrary.find(e => e.id === libId);
+  if (!entry) return;
+  if (entry.govee_flash?.ref) {
+    fetch(`/api/effects/${entry.govee_flash.ref}/preview`, { method: "POST" });
+  }
+  if (entry.sound && library[entry.sound]) {
+    const path = library[entry.sound].file;
+    const encodedPath = path.split("/").map(s => encodeURIComponent(s)).join("/");
+    const audio = new Audio(`/api/sfx/file/${encodedPath}`);
+    audio.play().catch(() => {});
   }
 }
 
@@ -728,6 +738,7 @@ function renderTriggerLibrary() {
     return `<div class="tlib-card">
       <span class="tlib-name" title="${entry.name.replace(/"/g,'&quot;')}">${entry.name}</span>
       <span class="tlib-meta" title="${meta}">${meta || '—'}</span>
+      <button class="icon" title="Preview trigger" onclick="previewLibraryTrigger('${entry.id}')">▶</button>
       <button class="icon" title="Add to current scene" onclick="applyLibraryTrigger('${entry.id}')">→</button>
       <button class="icon" title="Remove from library" onclick="removeLibraryTrigger('${entry.id}')">×</button>
     </div>`;
@@ -736,7 +747,6 @@ function renderTriggerLibrary() {
 
 function updateScene(field, value) { _dirty = true; scenes[activeSceneIndex][field] = value; renderScenes(); }
 function updateTrigger(index, field, value) { _dirty = true; scenes[activeSceneIndex].triggers[index][field] = value; }
-function setSoundTarget(index) { _soundTarget = (_soundTarget === index) ? null : index; renderEditor(); }
 function removeTrigger(index) { _dirty = true; scenes[activeSceneIndex].triggers.splice(index, 1); renderEditor(); }
 
 function addTriggerPrompt() {
@@ -863,12 +873,7 @@ function onSfxDblClick(audioId, path, name) {
   const scene = scenes[activeSceneIndex];
   if (!scene) return;
   _dirty = true;
-  if (_soundTarget !== null) {
-    scene.triggers[_soundTarget].sound = audioId;
-    _soundTarget = null;
-  } else {
-    updateScene('ambient', audioId);
-  }
+  updateScene('ambient', audioId);
   renderEditor();
 }
 

@@ -294,7 +294,6 @@ def normalize_audio():
     ext = os.path.splitext(abs_path)[1].lower()
     if ext not in [".ogg", ".wav", ".mp3", ".flac", ".aiff", ".aif"]:
         return jsonify({"error": "unsupported"}), 400
-    out_path = os.path.splitext(abs_path)[0] + ".ogg"
     tmp_path = abs_path + ".norm.tmp.ogg"
     try:
         r = subprocess.run(
@@ -307,8 +306,7 @@ def normalize_audio():
             if os.path.exists(tmp_path): os.remove(tmp_path)
             return jsonify({"error": "ffmpeg failed"}), 500
         duration_ms = int((_get_duration(tmp_path) or 0) * 1000)
-        os.replace(tmp_path, out_path)
-        if abs_path != out_path and os.path.exists(abs_path): os.remove(abs_path)
+        os.replace(tmp_path, abs_path if ext == ".ogg" else os.path.splitext(abs_path)[0] + ".ogg")
         return jsonify({"ok": True, "duration_ms": duration_ms})
     except Exception as e:
         if os.path.exists(tmp_path): os.remove(tmp_path)
