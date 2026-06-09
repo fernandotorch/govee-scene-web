@@ -499,6 +499,8 @@ BURST_DEFS = {
     'white-burst':    lambda: _gc._fire_burst(255, 255, 255, 0.20),
     'orange-burst':   lambda: _gc._fire_burst(255, 100,   0, 0.30),
     'fire-spark':     lambda: _gc._fire_burst(255, 200,  50, 0.30),
+    'blue-spark':     lambda: _gc._fire_burst( 50, 150, 255, 0.30),
+    'red-spark':      lambda: _gc._fire_burst(255,  30,  20, 0.30),
     'smg-burst':      _smg_burst,
     'pulse-rifle':    _pulse_rifle_burst,
     'flamethrower':   _flamethrower_burst,

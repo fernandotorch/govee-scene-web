@@ -1,0 +1,7 @@
+{
+  "ref": "red-spark",
+  "name": "Red Spark",
+  "type": "burst",
+  "color": "#ff1e14",
+  "description": "300ms red flash"
+}
