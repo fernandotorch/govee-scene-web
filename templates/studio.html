@@ -238,6 +238,7 @@ let currentPath = "";
 let _dragAudioId = null;  // audio ID being dragged from the SFX panel
 let _dragAudioPath = null;
 let _dragIndex = null;    // scene index being reordered
+let _dragTriggerIndex = null; // trigger index being reordered within a scene
 let _dragEffectRef = null;    // effect ref being dragged from the light panel
 let _dragSpotifyUri = null;
 
@@ -651,10 +652,12 @@ function renderEditor() {
 function renderTriggerCard(t, i) {
   const soundLabel = t.sound ? (library[t.sound]?.source_name || t.sound) : null;
   return `
-    <div class="trigger-card"
-         ondragover="if(_dragAudioId || _dragEffectRef){event.preventDefault(); this.classList.add('drop-active');}"
-         ondragleave="this.classList.remove('drop-active');"
-         ondrop="onTriggerDrop(event, ${i}); this.classList.remove('drop-active');">
+    <div class="trigger-card" draggable="true"
+         ondragstart="_dragTriggerIndex=${i}; _dragAudioId=null; _dragEffectRef=null; this.classList.add('dragging');"
+         ondragend="_dragTriggerIndex=null; document.querySelectorAll('.trigger-card').forEach(c=>c.classList.remove('drag-over','dragging'));"
+         ondragover="if(_dragTriggerIndex!==null&&_dragTriggerIndex!==${i}){event.preventDefault();this.classList.add('drag-over');}else if(_dragAudioId||_dragEffectRef){event.preventDefault();this.classList.add('drop-active');}"
+         ondragleave="this.classList.remove('drop-active','drag-over');"
+         ondrop="onTriggerDrop(event, ${i}); this.classList.remove('drop-active','drag-over');">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <input type="text" value="${t.name.replace(/"/g, '&quot;')}" style="font-size:0.9em; font-weight:bold; background:transparent; border:none; border-bottom:1px solid #333; color:inherit; width:100%; padding:0;" oninput="updateTrigger(${i}, 'name', this.value)">
         <button class="icon" title="Preview trigger" onclick="previewTrigger(${i})">▶</button>
@@ -785,6 +788,16 @@ function onAmbientDrop(e) {
 
 function onTriggerDrop(e, index) {
   e.preventDefault();
+  if (_dragTriggerIndex !== null && _dragTriggerIndex !== index) {
+    const triggers = scenes[activeSceneIndex].triggers;
+    const moved = triggers.splice(_dragTriggerIndex, 1)[0];
+    triggers.splice(index, 0, moved);
+    _dragTriggerIndex = null;
+    _dirty = true;
+    renderEditor();
+    return;
+  }
+  _dragTriggerIndex = null;
   if (_dragAudioId) {
     _registerAudio(_dragAudioId, _dragAudioPath);
     _dirty = true;
