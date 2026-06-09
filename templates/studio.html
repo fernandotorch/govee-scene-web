@@ -18,8 +18,10 @@
 
   #scenes-panel { width: 240px; }
   #editor-panel { flex: 1; }
-  #light-panel { width: 240px; }
-  #sound-panel { width: 240px; border-right: none; }
+  #right-container { display: flex; flex-direction: column; width: 480px; border-left: 1px solid var(--border); overflow: hidden; }
+  #right-panels-row { display: flex; flex: 1; overflow: hidden; }
+  #light-panel { flex: 1; }
+  #sound-panel { flex: 1; }
 
   /* Scene cards */
   .item { background: var(--panel); padding: 10px; margin-bottom: 6px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; }
@@ -44,7 +46,7 @@
   .tlib-card { background: #181c18; padding: 8px 10px; margin-bottom: 6px; border-radius: 5px; border: 1px solid #2a2a2a; display: flex; align-items: center; gap: 8px; font-size: 0.83em; cursor: default; }
   .tlib-card:hover { border-color: #444; }
   .tlib-card .tlib-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ccc; }
-  .tlib-card .tlib-meta { color: #555; font-size: 0.78em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+  .tlib-card .tlib-meta { color: #555; font-size: 0.78em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .trigger-card.sound-target { border-color: var(--accent); }
   .trigger-card.drop-active { border-color: var(--accent); background: #051a2a; }
   .trigger-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
@@ -97,13 +99,13 @@
   #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; place-items: center; z-index: 1000; }
   #modal { background: var(--panel); border: 1px solid var(--border); padding: 24px; border-radius: 8px; width: 400px; }
 
-  .upload-zone { border: 2px dashed var(--border); padding: 12px; text-align: center; color: #555; margin-top: 14px; font-size: 0.8em; border-radius: 4px; }
 
 /* Right panel sub-sections — all equal height, all scrollable */
-#spotify-section, #ambient-section, #sfx-section, #bursts-section, #trigger-library-section {
+#spotify-section, #ambient-section, #sfx-section, #bursts-section {
   flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
   border-bottom: 1px solid var(--border);
 }
+#trigger-library-section { border-top: 1px solid var(--border); max-height: 220px; overflow-y: auto; }
 #spotify-section .panel-content, #ambient-section .panel-content,
 #sfx-section .panel-content, #bursts-section .panel-content,
 #trigger-library-section .panel-content {
@@ -153,64 +155,68 @@
     </div>
   </div>
 
-  <!-- Light effects panel -->
-  <div class="panel" id="light-panel">
-    <div id="ambient-section">
-      <div class="panel-header"><h2>Ambient</h2></div>
-      <div class="panel-content">
-        <div id="effects-list"></div>
+  <div id="right-container">
+    <div id="right-panels-row">
+      <!-- Light effects panel -->
+      <div class="panel" id="light-panel">
+        <div id="ambient-section">
+          <div class="panel-header"><h2>Ambient</h2></div>
+          <div class="panel-content">
+            <div id="effects-list"></div>
+          </div>
+        </div>
+        <div id="bursts-section">
+          <div class="panel-header"><h2>Bursts</h2></div>
+          <div class="panel-content">
+            <div id="bursts-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="sound-panel">
+        <div id="spotify-section">
+          <div class="panel-header">
+            <h2>Spotify</h2>
+            <button class="icon" onclick="showAddSpotify()" title="Add playlist">+</button>
+          </div>
+          <div class="panel-content" id="spotify-list"></div>
+          <div id="spotify-add-form" style="display:none;">
+            <input id="spotify-add-name" type="text" placeholder="Name" style="margin-bottom:5px;"
+              onkeydown="if(event.key==='Enter')confirmAddSpotify(); if(event.key==='Escape')hideAddSpotify();">
+            <input id="spotify-add-uri" type="text" placeholder="spotify:playlist:… or https://…" style="margin-bottom:5px;"
+              onkeydown="if(event.key==='Enter')confirmAddSpotify(); if(event.key==='Escape')hideAddSpotify();">
+            <div style="display:flex; gap:6px;">
+              <button class="secondary" style="flex:1;" onclick="confirmAddSpotify()">Add</button>
+              <button class="secondary" style="flex:1;" onclick="hideAddSpotify()">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div id="sfx-section">
+          <div class="panel-header"><h2>SFX</h2></div>
+          <div class="panel-content">
+            <div class="path-row" id="sfx-path-row">
+              <span class="path-text" id="sfx-root-display"></span>
+              <button class="icon" onclick="startPathEdit()" title="Change root">✎</button>
+            </div>
+            <div id="sfx-path-edit" style="display:none; margin-bottom:10px;">
+              <input id="sfx-path-input" type="text" placeholder="/path/to/sfx-library" style="margin-bottom:6px;"
+                onkeydown="if(event.key==='Enter')confirmPathEdit(); if(event.key==='Escape')cancelPathEdit();">
+              <div style="display:flex; gap:6px;">
+                <button class="secondary" style="flex:1;" onclick="confirmPathEdit()">Apply</button>
+                <button class="secondary" style="flex:1;" onclick="cancelPathEdit()">Cancel</button>
+              </div>
+            </div>
+            <div class="breadcrumb" id="sfx-breadcrumb"></div>
+            <div id="library-list"></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div id="bursts-section">
-      <div class="panel-header"><h2>Bursts</h2></div>
-      <div class="panel-content">
-        <div id="bursts-list"></div>
-      </div>
-    </div>
+
     <div id="trigger-library-section">
       <div class="panel-header"><h2>Saved Triggers</h2></div>
       <div class="panel-content">
         <div id="trigger-library-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel" id="sound-panel">
-    <div id="spotify-section">
-      <div class="panel-header">
-        <h2>Spotify</h2>
-        <button class="icon" onclick="showAddSpotify()" title="Add playlist">+</button>
-      </div>
-      <div class="panel-content" id="spotify-list"></div>
-      <div id="spotify-add-form" style="display:none;">
-        <input id="spotify-add-name" type="text" placeholder="Name" style="margin-bottom:5px;"
-          onkeydown="if(event.key==='Enter')confirmAddSpotify(); if(event.key==='Escape')hideAddSpotify();">
-        <input id="spotify-add-uri" type="text" placeholder="spotify:playlist:… or https://…" style="margin-bottom:5px;"
-          onkeydown="if(event.key==='Enter')confirmAddSpotify(); if(event.key==='Escape')hideAddSpotify();">
-        <div style="display:flex; gap:6px;">
-          <button class="secondary" style="flex:1;" onclick="confirmAddSpotify()">Add</button>
-          <button class="secondary" style="flex:1;" onclick="hideAddSpotify()">Cancel</button>
-        </div>
-      </div>
-    </div>
-    <div id="sfx-section">
-      <div class="panel-header"><h2>SFX</h2></div>
-      <div class="panel-content">
-        <div class="path-row" id="sfx-path-row">
-          <span class="path-text" id="sfx-root-display"></span>
-          <button class="icon" onclick="startPathEdit()" title="Change root">✎</button>
-        </div>
-        <div id="sfx-path-edit" style="display:none; margin-bottom:10px;">
-          <input id="sfx-path-input" type="text" placeholder="/path/to/sfx-library" style="margin-bottom:6px;"
-            onkeydown="if(event.key==='Enter')confirmPathEdit(); if(event.key==='Escape')cancelPathEdit();">
-          <div style="display:flex; gap:6px;">
-            <button class="secondary" style="flex:1;" onclick="confirmPathEdit()">Apply</button>
-            <button class="secondary" style="flex:1;" onclick="cancelPathEdit()">Cancel</button>
-          </div>
-        </div>
-        <div class="breadcrumb" id="sfx-breadcrumb"></div>
-        <div id="library-list"></div>
-        <div class="upload-zone" id="upload-zone">Drop WAV to upload to current folder</div>
       </div>
     </div>
   </div>
@@ -748,6 +754,15 @@ function addTriggerPrompt() {
 function _registerAudio(audioId, path) {
   const existing = library[audioId];
   library[audioId] = { file: path, source_name: path.split('/').pop(), duration_ms: existing?.duration_ms ?? 0 };
+  if (!existing) {
+    fetch('/api/normalize-audio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path })
+    }).then(r => r.json()).then(data => {
+      if (data.ok && data.duration_ms) library[audioId].duration_ms = data.duration_ms;
+    }).catch(() => {});
+  }
 }
 
 function onAmbientDrop(e) {
@@ -922,30 +937,6 @@ function onLightDrop(e) {
   renderEditor();
 }
 
-// ── Upload ────────────────────────────────────────────────────────────────────
-
-const uploadZone = document.getElementById('upload-zone');
-uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.style.borderColor = 'var(--accent)'; };
-uploadZone.ondragleave = () => { uploadZone.style.borderColor = 'var(--border)'; };
-uploadZone.ondrop = async (e) => {
-  e.preventDefault(); uploadZone.style.borderColor = 'var(--border)';
-  if (!e.dataTransfer.files.length) return;
-  const file = e.dataTransfer.files[0];
-  const desc = prompt("Short description:", file.name.replace('.wav', ''));
-  if (!desc) return;
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('category', currentPath || "misc");
-  formData.append('description', desc);
-  uploadZone.textContent = "Uploading…";
-  const res = await fetch('/api/upload', { method: 'POST', body: formData });
-  const data = await res.json();
-  if (data.audio_id) {
-    renderExplorer(currentPath);
-    uploadZone.textContent = "Done.";
-    setTimeout(() => uploadZone.textContent = "Drop WAV to upload to current folder", 2000);
-  }
-};
 
 init();
 </script>

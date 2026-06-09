@@ -285,6 +285,35 @@ def upload_sfx():
     finally: os.remove(temp_path)
     return jsonify({"audio_id": audio_id, "filename": output_filename, "duration_ms": duration_ms, "rel_path": os.path.relpath(output_path, SFX_DIR)})
 
+@app.route("/api/normalize-audio", methods=["POST"])
+def normalize_audio():
+    rel_path = request.json.get("path", "")
+    abs_path = os.path.join(SFX_DIR, rel_path)
+    if not os.path.exists(abs_path):
+        return jsonify({"error": "not found"}), 404
+    ext = os.path.splitext(abs_path)[1].lower()
+    if ext not in [".ogg", ".wav", ".mp3", ".flac", ".aiff", ".aif"]:
+        return jsonify({"error": "unsupported"}), 400
+    out_path = os.path.splitext(abs_path)[0] + ".ogg"
+    tmp_path = abs_path + ".norm.tmp.ogg"
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-i", abs_path,
+             "-af", "loudnorm=I=-14:TP=-1:LRA=11",
+             "-c:a", "libvorbis", "-q:a", "4", tmp_path],
+            capture_output=True, timeout=60
+        )
+        if r.returncode != 0:
+            if os.path.exists(tmp_path): os.remove(tmp_path)
+            return jsonify({"error": "ffmpeg failed"}), 500
+        duration_ms = int((_get_duration(tmp_path) or 0) * 1000)
+        os.replace(tmp_path, out_path)
+        if abs_path != out_path and os.path.exists(abs_path): os.remove(abs_path)
+        return jsonify({"ok": True, "duration_ms": duration_ms})
+    except Exception as e:
+        if os.path.exists(tmp_path): os.remove(tmp_path)
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/sfx/file/<path:filename>")
 def get_sfx_file(filename): return send_from_directory(SFX_DIR, filename)
 
