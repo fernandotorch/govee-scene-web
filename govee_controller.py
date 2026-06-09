@@ -27,7 +27,7 @@ DISCOVERY_PORT = 4001
 LISTEN_PORT    = 4002
 CONTROL_PORT   = 4003
 
-_device_ip = "YOUR_GOVEE_DEVICE_IP" # Hardcoded for stability
+_device_ip = os.environ.get("GOVEE_DEVICE_IP") or None
 _sock      = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def discover() -> str | None:
@@ -481,23 +481,18 @@ def list_packs():
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-if __name__ == '__main__':
-    print('SFX_DIR:', SFX_DIR)
-    print('Discovering Govee H6047...')
-    if _device_ip: print('Device found at', _device_ip)
-    try:
-        local_ip = subprocess.check_output(['hostname', '-I'], text=True).split()[0]
-    except Exception: local_ip = 'localhost'
-    print('\n' + ('─' * 40))
-    print('  Lighting Lab: http://' + local_ip + ':5000')
-    print('  Studio:       http://' + local_ip + ':5000/studio')
-    print(('─' * 40) + '\n')
-    app.run(host='0.0.0.0', port=5000, use_reloader=False, threaded=True)
+if __name__ == "__main__":
+    if not _device_ip:
+        print("GOVEE_DEVICE_IP not set, running discovery...")
+        _device_ip = discover()
+        if _device_ip:
+            print(f"Device found at {_device_ip}")
+        else:
+            print("Warning: Govee device not found. Set GOVEE_DEVICE_IP env var.")
+    else:
+        print(f"Using device IP from env: {_device_ip}")
 
-if __name__ == '__main__':
     print('SFX_DIR:', SFX_DIR)
-    print('Discovering Govee H6047...')
-    if _device_ip: print('Device found at', _device_ip)
     try:
         local_ip = subprocess.check_output(['hostname', '-I'], text=True).split()[0]
     except Exception: local_ip = 'localhost'
