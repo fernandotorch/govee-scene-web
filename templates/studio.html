@@ -131,7 +131,6 @@
   <button class="tool" onclick="newSession()">New</button>
   <button class="tool" onclick="openSessionList()">Open</button>
   <button class="tool" onclick="saveSession()">Save</button>
-  <button onclick="reloadEffects()" title="Reload effect definitions from effect_defs.py without restarting the server" style="margin-left:8px">⟳ Reload Effects</button>
   <span id="sync-status"
  style="font-size:0.8em; color:#555; margin-left:8px;"></span><div id="sync-progress-container" style="display:none; width:100px; height:4px; background:#eee; margin-left:8px; vertical-align:middle;"><div id="sync-progress-bar" style="width:0%; height:100%; background:#4a9; transition:width 0.3s;"></div></div>
 </div>
@@ -160,7 +159,7 @@
       <!-- Light effects panel -->
       <div class="panel" id="light-panel">
         <div id="ambient-section">
-          <div class="panel-header"><h2>Ambient</h2></div>
+          <div class="panel-header"><h2>Ambient</h2><button class="icon" onclick="reloadEffects()" title="Reload effect_defs.py without restarting server">⟳</button></div>
           <div class="panel-content">
             <div id="effects-list"></div>
           </div>
@@ -750,14 +749,13 @@ function addTriggerPrompt() {
 }
 
 // ── Sound drop handlers ───────────────────────────────────────────────────────
-
 function _registerAudio(audioId, path) {
   const existing = library[audioId];
-  library[audioId] = { file: path, source_name: path.split('/').pop(), duration_ms: existing?.duration_ms ?? 0 };
+  library[audioId] = { file: path, source_name: path.split("/").pop(), duration_ms: existing?.duration_ms ?? 0 };
   if (!existing) {
-    fetch('/api/normalize-audio', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    fetch("/api/normalize-audio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path })
     }).then(r => r.json()).then(data => {
       if (data.ok && data.duration_ms) library[audioId].duration_ms = data.duration_ms;
