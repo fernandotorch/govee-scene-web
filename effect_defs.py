@@ -1,10 +1,9 @@
 import math, random, threading, time
 _gc = None
 
-def _init():
+def _init(gc_module):
     global _gc
-    import govee_controller
-    _gc = govee_controller
+    _gc = gc_module
 
 def _police_loop():
     _gc._on(); _gc._bright(100)
@@ -282,6 +281,71 @@ def _corp_lab_loop():
         _gc._stop.wait(0.05)
 
 
+def _bus_stop_loop():
+    _gc._on(); _gc._bright(100)
+    session = _gc._session_id
+    t0 = time.time()
+    next_sweep = t0 + random.uniform(8.0, 15.0)
+    next_neon = t0 + random.uniform(15.0, 30.0)
+    sweep_start = None
+    sweep_dir = 1
+    sweep_duration = 0.75
+    neon_start = None
+    neon_side = None
+    neon_duration = 3.0
+    shimmer_phase = [random.uniform(0, 6.28) for _ in range(10)]
+    while not _gc._stop.is_set() and _gc._session_id == session:
+        if _gc._burst_active:
+            _gc._stop.wait(0.05); continue
+        now = time.time()
+        t = now - t0
+
+        base = []
+        for i in range(10):
+            shimmer = (math.sin(t * 0.9 + shimmer_phase[i]) + 1) / 2
+            scale = 0.75 + 0.35 * shimmer
+            base.append([int(55 * scale), int(70 * scale), int(100 * scale)])
+
+        if neon_start is None and now >= next_neon:
+            neon_start = now
+            neon_side = random.choice([range(0, 5), range(5, 10)])
+        if neon_start is not None:
+            nt = now - neon_start
+            if nt >= neon_duration:
+                neon_start = None
+                next_neon = now + random.uniform(15.0, 30.0)
+            else:
+                envelope = math.sin(math.pi * nt / neon_duration)
+                blend = 0.55 * envelope
+                for i in neon_side:
+                    base[i][0] = int(base[i][0] + (180 - base[i][0]) * blend)
+                    base[i][1] = int(base[i][1] + (15 - base[i][1]) * blend)
+                    base[i][2] = int(base[i][2] + (20 - base[i][2]) * blend)
+
+        if sweep_start is None and now >= next_sweep:
+            sweep_start = now
+            sweep_dir = random.choice([1, -1])
+        if sweep_start is not None:
+            st = now - sweep_start
+            if st >= sweep_duration:
+                sweep_start = None
+                next_sweep = now + random.uniform(8.0, 15.0)
+            else:
+                progress = st / sweep_duration
+                pos = progress * 9 if sweep_dir == 1 else (1 - progress) * 9
+                for i in range(10):
+                    dist = abs(i - pos)
+                    if dist < 1.6:
+                        v = max(0.0, 1.0 - dist / 1.6)
+                        base[i][0] = int(base[i][0] + (225 - base[i][0]) * v)
+                        base[i][1] = int(base[i][1] + (225 - base[i][1]) * v)
+                        base[i][2] = int(base[i][2] + (210 - base[i][2]) * v)
+
+        packet = [(base[i][0], base[i][1], base[i][2], 1 << i) for i in range(10)]
+        _gc._seg_colors(packet)
+        _gc._stop.wait(0.08)
+
+
 def _static_loop(r, g, b, brightness=100):
     _gc._on(); _gc._bright(brightness)
     session = _gc._session_id
@@ -490,6 +554,7 @@ SCENES = {
     'risties': lambda: _gc._run(_risties_deep_loop),
     'rich-district': lambda: _gc._run(_rich_district_loop),
     'corp-lab': lambda: _gc._run(_corp_lab_loop),
+    'bus-stop': lambda: _gc._run(_bus_stop_loop),
     'calm-blue':        lambda: _gc._run(_static_loop, 165, 195, 255),
     'draconis':  lambda: _gc._run(_draconis_hb_loop,   80, 200,  10),
     'autodestruct': lambda: _gc._run(_draconis_pulse_loop, 255, 80, 0, 1.8, 0.05, 1.0),

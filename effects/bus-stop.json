@@ -1,0 +1,8 @@
+{
+  "ref": "bus-stop",
+  "name": "Bus Stop Rain",
+  "type": "ambient",
+  "category": "atmosphere",
+  "color": "#374664",
+  "description": "Rain-slick blue-grey street with per-segment wet shimmer — a warm headlight sweeps past every 8-15s, a dim red neon bleed rises and fades every 15-30s"
+}

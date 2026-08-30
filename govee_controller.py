@@ -29,6 +29,7 @@ CONTROL_PORT   = 4003
 
 _device_ip = os.environ.get("GOVEE_DEVICE_IP") or None
 _sock      = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+_last_send_time = 0.0
 
 def discover() -> str | None:
     recv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -51,9 +52,13 @@ def discover() -> str | None:
         send.close()
 
 def _send(cmd: dict):
-    global _sock
+    global _sock, _last_send_time
     if not _device_ip:
         return
+    now = time.time()
+    if (now - _last_send_time) * 1000 < 40:
+        return
+    _last_send_time = now
     msg = json.dumps({"msg": cmd}).encode()
     try:
         _sock.sendto(msg, (_device_ip, CONTROL_PORT))
@@ -158,7 +163,7 @@ def _fire_burst(r, g, b, duration):
 
 import importlib
 import effect_defs as _effect_defs
-_effect_defs._init()
+_effect_defs._init(sys.modules[__name__])
 SCENES = _effect_defs.SCENES
 BURST_DEFS = _effect_defs.BURST_DEFS
 
@@ -170,6 +175,22 @@ SFX_DIR = os.environ.get("SFX_LIBRARY_PATH", "/home/feru/sfx-library")
 PACKS_DIR = os.path.join(BASE_DIR, "packs")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 SESSIONS_DIR = os.path.join(BASE_DIR, "sessions")
+SPOTIFY_FILE = os.path.join(BASE_DIR, "spotify_playlists.json")
+
+def _load_spotify_playlists():
+    if os.path.exists(SPOTIFY_FILE):
+        try:
+            with open(SPOTIFY_FILE) as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
+        except Exception:
+            pass
+    return []
+
+def _save_spotify_playlists(playlists):
+    with open(SPOTIFY_FILE, "w") as f:
+        json.dump(playlists, f, indent=2)
 
 for d in [PACKS_DIR, UPLOADS_DIR, SESSIONS_DIR]:
     os.makedirs(d, exist_ok=True)
@@ -227,7 +248,7 @@ def preview_burst(ref):
 def reload_effects():
     global SCENES, BURST_DEFS
     importlib.reload(_effect_defs)
-    _effect_defs._init()
+    _effect_defs._init(sys.modules[__name__])
     SCENES = _effect_defs.SCENES
     BURST_DEFS = _effect_defs.BURST_DEFS
     return jsonify({"ok": True, "scenes": len(SCENES), "bursts": len(BURST_DEFS)})
@@ -242,6 +263,16 @@ def sfx_config():
             return jsonify({"ok": True, "path": SFX_DIR})
         return jsonify({"error": "invalid path"}), 400
     return jsonify({"path": SFX_DIR})
+
+@app.route("/api/spotify", methods=["GET", "POST"])
+def spotify_playlists():
+    if request.method == "POST":
+        data = request.json
+        if not isinstance(data, list):
+            return jsonify({"error": "expected a list"}), 400
+        _save_spotify_playlists(data)
+        return jsonify(data)
+    return jsonify(_load_spotify_playlists())
 
 @app.route("/api/sfx/tree")
 def get_sfx_tree():
@@ -292,7 +323,7 @@ def normalize_audio():
     if not os.path.exists(abs_path):
         return jsonify({"error": "not found"}), 404
     ext = os.path.splitext(abs_path)[1].lower()
-    if ext not in [".ogg", ".wav", ".mp3", ".flac", ".aiff", ".aif"]:
+    if ext not in [".ogg", ".wav", ".mp3", ".flac", ".aiff", ".aif", ".m4a"]:
         return jsonify({"error": "unsupported"}), 400
     tmp_path = abs_path + ".norm.tmp.ogg"
     try:
@@ -387,13 +418,13 @@ def _do_export(data):
                 if not os.path.exists(audio_path):
                     search_targets = set()
                     search_targets.add(audio_id)
-                    for ext in ['.ogg', '.wav', '.mp3', '.flac', '.aiff', '.aif']:
+                    for ext in ['.ogg', '.wav', '.mp3', '.flac', '.aiff', '.aif', '.m4a']:
                         search_targets.add(audio_id + ext)
                     for k in ['file', 'source_name']:
                         if info.get(k):
                             base = os.path.basename(info[k])
                             search_targets.add(base)
-                            search_targets.add(re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif)$', '.ogg', base, flags=re.IGNORECASE))
+                            search_targets.add(re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif|m4a)$', '.ogg', base, flags=re.IGNORECASE))
                     print(f'Attempting recovery for {audio_id}. Targets: {search_targets}')
                     found_path = None
                     for root, _, files in os.walk(SFX_DIR):
@@ -413,12 +444,12 @@ def _do_export(data):
                     else:
                         warnings.append(f'Missing: {info["file"]}'); continue
                 ext = os.path.splitext(audio_path)[1].lower()
-                if ext not in ['.ogg', '.wav', '.mp3', '.flac', '.aiff', '.aif']:
+                if ext not in ['.ogg', '.wav', '.mp3', '.flac', '.aiff', '.aif', '.m4a']:
                     warnings.append(f'Unsupported format: {info["file"]}'); continue
                 file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
                 if file_size_mb > 20 and ext == ".ogg":
                     warnings.append(f"Large OGG ({file_size_mb:.0f} MB): {info['file']} - consider shorter loop")
-                base_id = re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif)$', '', audio_id, flags=re.IGNORECASE)
+                base_id = re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif|m4a)$', '', audio_id, flags=re.IGNORECASE)
                 if ext == '.ogg':
                     _export_progress['file_percent'] = 100
                     z.write(audio_path, base_id + '.ogg'); info['file'] = base_id + '.ogg'

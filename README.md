@@ -33,7 +33,7 @@ Set your SFX library path in Studio (gear icon) — this is the folder the file 
 - Navigate your SFX library folder tree
 - **Drag** a file onto an ambient slot or trigger slot to assign it
 - **Click** the play icon to preview; click again to stop
-- Supported formats: OGG, WAV, MP3, FLAC (recommended: OGG or MP3 under 20 MB)
+- Supported formats: OGG, WAV, MP3, FLAC, M4A (recommended: OGG or MP3 under 20 MB; non-OGG formats are auto-converted to OGG)
 
 ### Burst effects
 
