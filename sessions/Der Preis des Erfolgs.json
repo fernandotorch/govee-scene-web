@@ -20,8 +20,8 @@
       "ambient": null,
       "ambient_volume": 50,
       "govee_effect": {
-        "ref": "rich-district",
-        "definition": {}
+        "definition": {},
+        "ref": "rich-district"
       },
       "id": "scene-1780939380708",
       "name": "Crime scene",
@@ -46,12 +46,12 @@
       },
       "triggers": [
         {
-          "id": "trigger-1780990466499",
-          "name": "Finger's reveal",
-          "sound": "",
           "govee_flash": {
             "ref": "rose-pulse"
-          }
+          },
+          "id": "trigger-1780990466499",
+          "name": "Finger's reveal",
+          "sound": ""
         }
       ]
     },
@@ -70,12 +70,44 @@
       },
       "triggers": [
         {
-          "id": "trigger-1780990483701",
-          "name": "Finger's reveal",
-          "sound": "",
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1781008974178",
+          "name": "Shotgun",
+          "sound": "freesound-guns and explosions-shotgun"
+        },
+        {
+          "govee_flash": {
+            "ref": "red-spark"
+          },
+          "id": "trigger-1781009733160",
+          "name": "laser gun red",
+          "sound": "freesound-guns and explosions-laser_gun"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1781013858744",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1781013863291",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
           "govee_flash": {
             "ref": "rose-pulse"
-          }
+          },
+          "id": "trigger-1780990483701",
+          "name": "Finger's reveal",
+          "sound": ""
         }
       ]
     },
@@ -89,7 +121,7 @@
       "id": "scene-1780939437965",
       "name": "Assault at Chapacabana",
       "spotify": {
-        "uri": "https://open.spotify.com/playlist/37i9dQZF1DX661EjJOj3Tu?si=uVF2fh11QaKzUXx4Bxg6fg",
+        "uri": "https://open.spotify.com/playlist/6CsOCsfkRadVY26aIZTjtB?si=RF1DuPatT_SxMUjzEnV-PA",
         "volume": 50
       },
       "triggers": [
@@ -110,12 +142,28 @@
           "sound": "freesound-guns and explosions-pistol"
         },
         {
-          "id": "trigger-1780990499839",
-          "name": "Finger's reveal",
-          "sound": "",
+          "govee_flash": {
+            "ref": "red-spark"
+          },
+          "id": "trigger-1781009561057",
+          "name": "laser gun red",
+          "sound": "freesound-guns and explosions-laser_gun"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1781008925979",
+          "name": "Shotgun",
+          "sound": "freesound-guns and explosions-shotgun"
+        },
+        {
           "govee_flash": {
             "ref": "rose-pulse"
-          }
+          },
+          "id": "trigger-1780990499839",
+          "name": "Finger's reveal",
+          "sound": ""
         }
       ]
     },
@@ -150,12 +198,28 @@
           "sound": "freesound-guns and explosions-pistol"
         },
         {
-          "id": "trigger-1780990496850",
-          "name": "Finger's reveal",
-          "sound": "",
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1781008968587",
+          "name": "Shotgun",
+          "sound": "freesound-guns and explosions-shotgun"
+        },
+        {
+          "govee_flash": {
+            "ref": "red-spark"
+          },
+          "id": "trigger-1781009739512",
+          "name": "laser gun red",
+          "sound": "freesound-guns and explosions-laser_gun"
+        },
+        {
           "govee_flash": {
             "ref": "rose-pulse"
-          }
+          },
+          "id": "trigger-1780990496850",
+          "name": "Finger's reveal",
+          "sound": ""
         }
       ]
     }
@@ -171,6 +235,11 @@
       "file": "freesound/guns and explosions/flamethrower.ogg",
       "source_name": "flamethrower.ogg"
     },
+    "freesound-guns and explosions-laser_gun": {
+      "duration_ms": 1277,
+      "file": "freesound/guns and explosions/freesound-guns and explosions-laser_gun.ogg",
+      "source_name": "freesound-guns and explosions-laser_gun.ogg"
+    },
     "freesound-guns and explosions-pistol": {
       "duration_ms": 0,
       "file": "freesound/guns and explosions/freesound-guns and explosions-pistol.ogg",
@@ -180,6 +249,11 @@
       "duration_ms": 0,
       "file": "freesound/guns and explosions/pulse_rifle.ogg",
       "source_name": "pulse_rifle.ogg"
+    },
+    "freesound-guns and explosions-shotgun": {
+      "duration_ms": 4200,
+      "file": "freesound/guns and explosions/freesound-guns and explosions-shotgun.ogg",
+      "source_name": "freesound-guns and explosions-shotgun.ogg"
     },
     "freesound-neomorph": {
       "duration_ms": 0,

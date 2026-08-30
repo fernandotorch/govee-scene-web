@@ -20,8 +20,8 @@
       "ambient": "freesound-space-spaceship_quiet",
       "ambient_volume": 50,
       "govee_effect": {
-        "ref": "calm-blue",
-        "definition": {}
+        "definition": {},
+        "ref": "calm-blue"
       },
       "id": "scene-1780922205437",
       "name": "Cronus sleeping",
@@ -165,6 +165,14 @@
           "id": "trigger-1780933809017",
           "name": "flamethrower",
           "sound": "freesound-guns and explosions-flamethrower"
+        },
+        {
+          "id": "trigger-1782305110893",
+          "name": "bloodburst",
+          "sound": "freesound-neomorph",
+          "govee_flash": {
+            "ref": "bio-burst"
+          }
         }
       ]
     },

@@ -1,0 +1,144 @@
+{
+  "name": "Blackout Eve",
+  "scenes": [
+    {
+      "ambient": "freesound-voices-office_ambient",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "calm-blue"
+      },
+      "id": "scene-1788110894894",
+      "name": "Station Briefing",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/1bKIgpLiVrZPrAwc4jxr6e?si=8K2SIzdwSxGPwxD3JJw-Bg",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": "freesound-weather-traffic on rain",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "ref": "bus-stop",
+        "definition": {}
+      },
+      "id": "scene-1788111153031",
+      "name": "Crime scene",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/4JQYyRP8hFGWAw5HBW1Owr?si=BRaNvE38Qm6qpURE1bPbWw",
+        "volume": 50,
+        "start_time": 0
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "calm-blue"
+      },
+      "id": "scene-1788111153431",
+      "name": "Happy Jacks",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "calm-blue"
+      },
+      "id": "scene-1788111153784",
+      "name": "Lyra's apartment",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "calm-blue"
+      },
+      "id": "scene-1788111180713",
+      "name": "Meeting Roland",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/1ExPXsieweUMDoa7URGsNu?si=DOBZqJYqRmmg9PUmYQ53fg",
+        "volume": 50,
+        "start_time": 8
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "alarm"
+      },
+      "id": "scene-1788111204568",
+      "name": "Chase",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "calm-blue"
+      },
+      "id": "scene-1788111208640",
+      "name": "Back to the station",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "calm-blue"
+      },
+      "id": "scene-1788111215580",
+      "name": "The trial",
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    }
+  ],
+  "audio_manifest": {
+    "freesound-voices-office_ambient": {
+      "duration_ms": 0,
+      "file": "freesound/voices/freesound-voices-office_ambient.ogg",
+      "source_name": "freesound-voices-office_ambient.ogg"
+    },
+    "freesound-weather-rain_umbrella.m4a": {
+      "duration_ms": 0,
+      "file": "freesound/weather/rain_umbrella.m4a",
+      "source_name": "rain_umbrella.m4a"
+    },
+    "freesound-weather-traffic on rain": {
+      "duration_ms": 0,
+      "file": "freesound/weather/freesound-weather-traffic on rain.ogg",
+      "source_name": "freesound-weather-traffic on rain.ogg"
+    }
+  }
+}
