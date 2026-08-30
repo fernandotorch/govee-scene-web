@@ -244,12 +244,18 @@ let _dragIndex = null;    // scene index being reordered
 let _dragTriggerIndex = null; // trigger index being reordered within a scene
 let _dragEffectRef = null;    // effect ref being dragged from the light panel
 let _dragSpotifyUri = null;
+let spotifyPlaylists = [];
 
-function loadSpotifyPlaylists() { return JSON.parse(localStorage.getItem('spotifyPlaylists') || '[]'); }
-function saveSpotifyPlaylists(list) { localStorage.setItem('spotifyPlaylists', JSON.stringify(list)); }
+function persistSpotifyPlaylists() {
+  fetch('/api/spotify', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(spotifyPlaylists)
+  }).catch(() => {});
+}
 
 function renderSpotifyList() {
-  const list = loadSpotifyPlaylists();
+  const list = spotifyPlaylists;
   const el = document.getElementById('spotify-list');
   if (list.length === 0) {
     el.innerHTML = '<div style="padding:4px 0; color:#444; font-size:0.82em;">No playlists — click + to add</div>';
@@ -278,16 +284,14 @@ function confirmAddSpotify() {
   const name = document.getElementById('spotify-add-name').value.trim();
   const uri = document.getElementById('spotify-add-uri').value.trim();
   if (!name || !uri) return;
-  const list = loadSpotifyPlaylists();
-  list.push({name, uri});
-  saveSpotifyPlaylists(list);
+  spotifyPlaylists.push({name, uri});
+  persistSpotifyPlaylists();
   renderSpotifyList();
   hideAddSpotify();
 }
 function removeSpotifyItem(index) {
-  const list = loadSpotifyPlaylists();
-  list.splice(index, 1);
-  saveSpotifyPlaylists(list);
+  spotifyPlaylists.splice(index, 1);
+  persistSpotifyPlaylists();
   renderSpotifyList();
 }
 function openSpotifyUri(uri) {
@@ -322,9 +326,10 @@ function _saveGlobalLibrary() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  const [effRes, rootRes] = await Promise.all([fetch('/api/effects'), fetch('/api/sfx/config')]);
+  const [effRes, rootRes, spotRes] = await Promise.all([fetch('/api/effects'), fetch('/api/sfx/config'), fetch('/api/spotify')]);
   effects = await effRes.json();
   const rootData = await rootRes.json();
+  spotifyPlaylists = await spotRes.json();
   document.getElementById('sfx-root-display').textContent = rootData.path;
   triggerLibrary = _loadGlobalLibrary();
   renderScenes(); renderExplorer(); renderEffects();
@@ -638,7 +643,7 @@ function renderEditor() {
          ondragleave="this.classList.remove('drop-active')"
          ondrop="event.preventDefault();this.classList.remove('drop-active');if(_dragSpotifyUri){updateScene('spotify',{...scenes[activeSceneIndex].spotify,uri:_dragSpotifyUri});renderEditor();}">
       ${scene.spotify.uri
-        ? `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${loadSpotifyPlaylists().find(p=>p.uri===scene.spotify.uri)?.name || scene.spotify.uri}</span>
+        ? `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${spotifyPlaylists.find(p=>p.uri===scene.spotify.uri)?.name || scene.spotify.uri}</span>
            <button class="icon" style="flex-shrink:0;margin-left:8px;" onclick="updateScene('spotify',{uri:'',volume:50});renderEditor();">×</button>`
         : `<span style="color:#555;">Drop playlist here</span>`}
     </div>
