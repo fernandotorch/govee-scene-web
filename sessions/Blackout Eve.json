@@ -52,12 +52,12 @@
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "calm-blue"
+        "ref": "lyra-apartment"
       },
       "id": "scene-1788111153784",
       "name": "Lyra's apartment",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/playlist/4JQYyRP8hFGWAw5HBW1Owr",
         "volume": 50
       },
       "triggers": []

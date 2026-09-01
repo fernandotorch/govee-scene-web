@@ -384,6 +384,57 @@ def _trial_loop():
         _gc._stop.wait(0.06)
 
 
+def _lyra_apartment_loop():
+    # Neon bleed through a rain-streaked window: each bar gradients from cool
+    # blue at the bottom (h=0) to magenta-pink at the top (h=4), both bars the
+    # same, shimmering gently (same shimmer math as bus-stop's rain-glass glow,
+    # just slower). Occasional warm amber twinkle on a single random segment
+    # stands in for the string lights strung above the window.
+    _gc._on(); _gc._bright(100)
+    session = _gc._session_id
+    t0 = time.time()
+    BLUE = (35, 55, 200)
+    PINK = (210, 25, 145)
+    shimmer_phase = [random.uniform(0, 6.28) for _ in range(10)]
+    next_twinkle = t0 + random.uniform(3.0, 7.0)
+    twinkle_seg = None
+    twinkle_start = None
+    twinkle_dur = 0.0
+
+    while not _gc._stop.is_set() and _gc._session_id == session:
+        if _gc._burst_active:
+            _gc._stop.wait(0.05); continue
+        now = time.time()
+        t = now - t0
+
+        packet = [None] * 10
+        for h in range(5):
+            frac = h / 4.0
+            base = tuple(BLUE[k] + (PINK[k] - BLUE[k]) * frac for k in range(3))
+            for i in (h, h + 5):
+                shimmer = (math.sin(t * 0.5 + shimmer_phase[i]) + 1) / 2
+                scale = 0.7 + 0.3 * shimmer
+                packet[i] = [int(base[0] * scale), int(base[1] * scale), int(base[2] * scale)]
+
+        if twinkle_seg is None and now >= next_twinkle:
+            twinkle_seg = random.randint(0, 9)
+            twinkle_start = now
+            twinkle_dur = random.uniform(0.15, 0.35)
+        if twinkle_seg is not None:
+            tt = now - twinkle_start
+            if tt >= twinkle_dur:
+                twinkle_seg = None
+                next_twinkle = now + random.uniform(3.0, 7.0)
+            else:
+                v = math.sin(math.pi * tt / twinkle_dur)
+                warm = (255, 190, 90)
+                packet[twinkle_seg] = [int(packet[twinkle_seg][k] + (warm[k] - packet[twinkle_seg][k]) * v) for k in range(3)]
+
+        out = [(packet[i][0], packet[i][1], packet[i][2], 1 << i) for i in range(10)]
+        _gc._seg_colors(out)
+        _gc._stop.wait(0.08)
+
+
 def _happy_jacks_loop():
     _gc._on(); _gc._bright(100)
     session = _gc._session_id
@@ -660,6 +711,7 @@ SCENES = {
     'corp-lab': lambda: _gc._run(_corp_lab_loop),
     'bus-stop': lambda: _gc._run(_bus_stop_loop),
     'happy-jacks': lambda: _gc._run(_happy_jacks_loop),
+    'lyra-apartment': lambda: _gc._run(_lyra_apartment_loop),
     'trial': lambda: _gc._run(_trial_loop),
     'calm-blue':        lambda: _gc._run(_static_loop, 165, 195, 255),
     'draconis':  lambda: _gc._run(_draconis_hb_loop,   80, 200,  10),
