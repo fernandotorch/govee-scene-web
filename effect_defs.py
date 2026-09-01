@@ -438,9 +438,10 @@ def _lyra_apartment_loop():
 def _meeting_roland_loop():
     # Racing to catch the meeting before it's too late: dim cool night-drive base,
     # with a warm-white streetlight pulse sweeping the whole bar in sync (same
-    # rise/hold/fall envelope as bus-stop's traffic sweep) firing back-to-back
-    # rather than every few seconds, so it reads as constant passing streetlights
-    # rather than an occasional highlight.
+    # rise/hold/fall envelope as bus-stop's traffic sweep). Alternates between
+    # random-length stretches of passing streetlights and random-length quiet
+    # stretches of just the low base light, like driving through denser and
+    # sparser blocks of a city street, rather than flickering constantly.
     _gc._on(); _gc._bright(100)
     session = _gc._session_id
     BASE = (42, 36, 85)
@@ -449,7 +450,11 @@ def _meeting_roland_loop():
     pulse_hold = 0.05
     pulse_fall = 0.32
     pulse_duration = pulse_rise + pulse_hold + pulse_fall
-    next_pulse = time.time()
+
+    now0 = time.time()
+    active = True
+    phase_end = now0 + random.uniform(3.0, 6.0)
+    next_pulse = now0
     pulse_start = None
 
     while not _gc._stop.is_set() and _gc._session_id == session:
@@ -457,20 +462,30 @@ def _meeting_roland_loop():
             _gc._stop.wait(0.05); continue
         now = time.time()
 
-        if pulse_start is None and now >= next_pulse:
-            pulse_start = now
-        v = 0.0
-        if pulse_start is not None:
-            pt = now - pulse_start
-            if pt >= pulse_duration:
-                pulse_start = None
-                next_pulse = now + random.uniform(0.5, 1.0)
-            elif pt < pulse_rise:
-                v = pt / pulse_rise
-            elif pt < pulse_rise + pulse_hold:
-                v = 1.0
+        if now >= phase_end:
+            active = not active
+            if active:
+                phase_end = now + random.uniform(3.0, 6.0)
+                next_pulse = now
             else:
-                v = max(0.0, 1.0 - (pt - pulse_rise - pulse_hold) / pulse_fall)
+                phase_end = now + random.uniform(2.0, 5.0)
+                pulse_start = None
+
+        v = 0.0
+        if active:
+            if pulse_start is None and now >= next_pulse:
+                pulse_start = now
+            if pulse_start is not None:
+                pt = now - pulse_start
+                if pt >= pulse_duration:
+                    pulse_start = None
+                    next_pulse = now + random.uniform(0.5, 1.0)
+                elif pt < pulse_rise:
+                    v = pt / pulse_rise
+                elif pt < pulse_rise + pulse_hold:
+                    v = 1.0
+                else:
+                    v = max(0.0, 1.0 - (pt - pulse_rise - pulse_hold) / pulse_fall)
 
         r = int(BASE[0] + (LIGHT[0] - BASE[0]) * v)
         g = int(BASE[1] + (LIGHT[1] - BASE[1]) * v)

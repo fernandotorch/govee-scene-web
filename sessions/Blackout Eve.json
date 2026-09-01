@@ -72,8 +72,7 @@
       "id": "scene-1788111180713",
       "name": "Meeting Roland",
       "spotify": {
-        "start_time": 8,
-        "uri": "https://open.spotify.com/playlist/1ExPXsieweUMDoa7URGsNu?si=DOBZqJYqRmmg9PUmYQ53fg",
+        "uri": "https://open.spotify.com/playlist/15goCkkYLDi2AzOMv7jgzw",
         "volume": 50
       },
       "triggers": []
@@ -88,7 +87,7 @@
       "id": "scene-1788111204568",
       "name": "Chase",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/playlist/5sIK67b2mVXS0dItnHrrF0",
         "volume": 50
       },
       "triggers": []
@@ -98,12 +97,12 @@
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "calm-blue"
+        "ref": "meeting-roland"
       },
       "id": "scene-1788111208640",
       "name": "Back to the station",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/playlist/15goCkkYLDi2AzOMv7jgzw",
         "volume": 50
       },
       "triggers": []
