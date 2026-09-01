@@ -435,6 +435,53 @@ def _lyra_apartment_loop():
         _gc._stop.wait(0.08)
 
 
+def _chase_loop():
+    # Frantic pursuit — the players are Blade Runners, so this is their own
+    # vehicle's light bar: rapid, irregular red/blue strobes against a near-
+    # dark base, plus an occasional white flash (a near-miss headlight glare).
+    # The two bars fire independently and asynchronously rather than alternating
+    # in sync like `alarm` — that asymmetry is what reads as chaotic rather than
+    # a steady, predictable strobe.
+    _gc._on(); _gc._bright(100)
+    session = _gc._session_id
+    OFF = (4, 3, 6)
+    t0 = time.time()
+    sides = {
+        _gc.LEFT_MASK: {'next': t0, 'event': None},
+        _gc.RIGHT_MASK: {'next': t0 + 0.15, 'event': None},
+    }
+
+    while not _gc._stop.is_set() and _gc._session_id == session:
+        if _gc._burst_active:
+            _gc._stop.wait(0.05); continue
+        now = time.time()
+        packet = []
+        for mask, st in sides.items():
+            r, g, b = OFF
+
+            if st['event'] is None and now >= st['next']:
+                roll = random.random()
+                if roll < 0.42:
+                    st['event'] = ('red', now, random.uniform(0.12, 0.2))
+                elif roll < 0.84:
+                    st['event'] = ('blue', now, random.uniform(0.12, 0.2))
+                else:
+                    st['event'] = ('white', now, random.uniform(0.1, 0.16))
+                st['next'] = now + random.uniform(0.1, 0.28)
+
+            if st['event'] is not None:
+                kind, start, dur = st['event']
+                if now - start >= dur:
+                    st['event'] = None
+                else:
+                    if kind == 'red': r, g, b = 255, 10, 5
+                    elif kind == 'blue': r, g, b = 10, 60, 255
+                    elif kind == 'white': r, g, b = 255, 250, 235
+            packet.append((r, g, b, mask))
+        _gc._seg_colors(packet)
+        _gc._stop.wait(0.10)
+
+
 def _meeting_roland_loop():
     # Racing to catch the meeting before it's too late: dim cool night-drive base,
     # with a warm-white streetlight pulse sweeping the whole bar in sync (same
@@ -772,6 +819,7 @@ SCENES = {
     'happy-jacks': lambda: _gc._run(_happy_jacks_loop),
     'lyra-apartment': lambda: _gc._run(_lyra_apartment_loop),
     'meeting-roland': lambda: _gc._run(_meeting_roland_loop),
+    'chase': lambda: _gc._run(_chase_loop),
     'trial': lambda: _gc._run(_trial_loop),
     'calm-blue':        lambda: _gc._run(_static_loop, 165, 195, 255),
     'draconis':  lambda: _gc._run(_draconis_hb_loop,   80, 200,  10),

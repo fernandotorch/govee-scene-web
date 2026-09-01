@@ -82,7 +82,7 @@
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "alarm"
+        "ref": "chase"
       },
       "id": "scene-1788111204568",
       "name": "Chase",
