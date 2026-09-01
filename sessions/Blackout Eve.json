@@ -113,13 +113,14 @@
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "calm-blue"
+        "ref": "trial"
       },
       "id": "scene-1788111215580",
       "name": "The trial",
       "spotify": {
-        "uri": "https://open.spotify.com/track/2FrRJZSMt1vTNOuJDlRBPk",
-        "volume": 50
+        "uri": "https://open.spotify.com/album/73JQnkZK21PuqE4qF3TLJE",
+        "volume": 50,
+        "start_time": 25
       },
       "triggers": []
     },

@@ -358,6 +358,32 @@ def _bus_stop_loop():
         _gc._stop.wait(0.08)
 
 
+def _trial_loop():
+    # disian's structure (dim breathing base + random unpredictable bright glitches)
+    # recolored to a flat cool white — no hue shift, so it reads as an uneasy light
+    # rather than an alien one. Uses one _seg_colors call per tick (unlike disian's
+    # _color()+_bright() pair) to avoid dropping the second send under the device's
+    # 40ms LAN rate limit, the same bug fixed in happy-jacks.
+    _gc._on()
+    session = _gc._session_id
+    r, g, b = 220, 230, 255
+    phase = 0.0
+    glitch_until = 0.0
+    while not _gc._stop.is_set() and _gc._session_id == session:
+        if not _gc._burst_active:
+            phase += 0.025
+            v = (math.sin(phase) + 1) / 2
+            now = time.time()
+            if now >= glitch_until and random.random() < 0.015:
+                glitch_until = now + random.uniform(0.04, 0.18)
+            if now < glitch_until:
+                scale = 0.85 + 0.15 * random.random()
+            else:
+                scale = 0.20 + 0.35 * v
+            _gc._seg_colors([(int(r * scale), int(g * scale), int(b * scale), _gc.LEFT_MASK | _gc.RIGHT_MASK)])
+        _gc._stop.wait(0.06)
+
+
 def _happy_jacks_loop():
     _gc._on(); _gc._bright(100)
     session = _gc._session_id
@@ -634,6 +660,7 @@ SCENES = {
     'corp-lab': lambda: _gc._run(_corp_lab_loop),
     'bus-stop': lambda: _gc._run(_bus_stop_loop),
     'happy-jacks': lambda: _gc._run(_happy_jacks_loop),
+    'trial': lambda: _gc._run(_trial_loop),
     'calm-blue':        lambda: _gc._run(_static_loop, 165, 195, 255),
     'draconis':  lambda: _gc._run(_draconis_hb_loop,   80, 200,  10),
     'autodestruct': lambda: _gc._run(_draconis_pulse_loop, 255, 80, 0, 1.8, 0.05, 1.0),
