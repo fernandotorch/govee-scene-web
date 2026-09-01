@@ -26,9 +26,9 @@
       "id": "scene-1788111153031",
       "name": "Crime scene",
       "spotify": {
+        "start_time": 0,
         "uri": "https://open.spotify.com/playlist/4JQYyRP8hFGWAw5HBW1Owr?si=BRaNvE38Qm6qpURE1bPbWw",
-        "volume": 50,
-        "start_time": 0
+        "volume": 50
       },
       "triggers": []
     },
@@ -37,12 +37,12 @@
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "calm-blue"
+        "ref": "happy-jacks"
       },
       "id": "scene-1788111153431",
       "name": "Happy Jacks",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/playlist/26OXuyMcZrdQxp7XvgWtAS",
         "volume": 50
       },
       "triggers": []
@@ -72,9 +72,9 @@
       "id": "scene-1788111180713",
       "name": "Meeting Roland",
       "spotify": {
+        "start_time": 8,
         "uri": "https://open.spotify.com/playlist/1ExPXsieweUMDoa7URGsNu?si=DOBZqJYqRmmg9PUmYQ53fg",
-        "volume": 50,
-        "start_time": 8
+        "volume": 50
       },
       "triggers": []
     },
