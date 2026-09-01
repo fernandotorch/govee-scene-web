@@ -20,8 +20,8 @@
       "ambient": "freesound-weather-traffic on rain",
       "ambient_volume": 50,
       "govee_effect": {
-        "ref": "bus-stop",
-        "definition": {}
+        "definition": {},
+        "ref": "bus-stop"
       },
       "id": "scene-1788111153031",
       "name": "Crime scene",
@@ -33,7 +33,7 @@
       "triggers": []
     },
     {
-      "ambient": null,
+      "ambient": "freesound-casino",
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
@@ -48,7 +48,7 @@
       "triggers": []
     },
     {
-      "ambient": null,
+      "ambient": "freesound-street",
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
@@ -67,7 +67,7 @@
       "ambient_volume": 50,
       "govee_effect": {
         "definition": {},
-        "ref": "calm-blue"
+        "ref": "meeting-roland"
       },
       "id": "scene-1788111180713",
       "name": "Meeting Roland",
@@ -125,14 +125,14 @@
       "triggers": []
     },
     {
-      "id": "scene-1788283684598",
-      "name": "Resolution",
-      "govee_effect": {
-        "ref": "calm-blue",
-        "definition": {}
-      },
       "ambient": null,
       "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "calm-blue"
+      },
+      "id": "scene-1788283684598",
+      "name": "Resolution",
       "spotify": {
         "uri": "https://open.spotify.com/album/5aNhFPqEcJHzP0Yrrs8v50",
         "volume": 50
@@ -141,6 +141,11 @@
     }
   ],
   "audio_manifest": {
+    "freesound-casino": {
+      "duration_ms": 0,
+      "file": "freesound/freesound-casino.ogg",
+      "source_name": "freesound-casino.ogg"
+    },
     "freesound-voices-office_ambient": {
       "duration_ms": 0,
       "file": "freesound/voices/freesound-voices-office_ambient.ogg",
@@ -155,6 +160,11 @@
       "duration_ms": 0,
       "file": "freesound/weather/freesound-weather-traffic on rain.ogg",
       "source_name": "freesound-weather-traffic on rain.ogg"
+    },
+    "freesound-street": {
+      "file": "freesound-street.ogg",
+      "source_name": "freesound-street.ogg",
+      "duration_ms": 57900
     }
   }
 }
