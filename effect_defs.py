@@ -364,16 +364,19 @@ def _happy_jacks_loop():
     t0 = time.time()
 
     # warm slot-machine keyframes with a neon bleed accent, breathed independently per side
-    keyframes = [(200, 110, 20), (255, 180, 60), (255, 90, 160)]
-    left_cycle = random.uniform(6.0, 8.0)
-    right_cycle = random.uniform(6.0, 8.0)
+    keyframes = [(200, 110, 20), (255, 180, 60), (255, 60, 30), (255, 90, 160)]
+    left_cycle = random.uniform(4.5, 6.0)
+    right_cycle = random.uniform(4.5, 6.0)
     left_phase = random.uniform(0, 1)
     right_phase = random.uniform(0, 1)
 
-    next_flash = t0 + random.uniform(6.0, 14.0)
+    # jackpot flash: a short cascade of individual coin-drop pulses, not one smooth flash
+    next_flash = t0 + random.uniform(20.0, 35.0)
     flash_start = None
     flash_side = None
-    flash_duration = 0.4
+    flash_coin_times = []
+    flash_coin_dur = 0.09
+    flash_total = 0.0
 
     def breathe(t, cycle, phase):
         tt = ((t / cycle) + phase) % 1.0
@@ -395,19 +398,30 @@ def _happy_jacks_loop():
         if flash_start is None and now >= next_flash:
             flash_start = now
             flash_side = random.choice(['left', 'right'])
+            n_coins = random.randint(4, 5)
+            offset = 0.0
+            flash_coin_times = []
+            for _ in range(n_coins):
+                flash_coin_times.append(offset)
+                offset += random.uniform(0.09, 0.16)
+            flash_total = offset + flash_coin_dur
         if flash_start is not None:
             ft = now - flash_start
-            if ft >= flash_duration:
+            if ft >= flash_total:
                 flash_start = None
-                next_flash = now + random.uniform(6.0, 14.0)
+                next_flash = now + random.uniform(20.0, 35.0)
             else:
-                v = math.sin(math.pi * ft / flash_duration)
+                v = 0.0
+                for ctime in flash_coin_times:
+                    dt = ft - ctime
+                    if 0 <= dt < flash_coin_dur:
+                        v = max(v, math.sin(math.pi * dt / flash_coin_dur))
                 target = lc if flash_side == 'left' else rc
                 for k in range(3):
                     target[k] = int(target[k] + (255 - target[k]) * v)
 
         _gc._seg_colors([(lc[0], lc[1], lc[2], _gc.LEFT_MASK), (rc[0], rc[1], rc[2], _gc.RIGHT_MASK)])
-        _gc._stop.wait(0.05)
+        _gc._stop.wait(0.08)
 
 
 def _static_loop(r, g, b, brightness=100):
