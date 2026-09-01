@@ -358,6 +358,58 @@ def _bus_stop_loop():
         _gc._stop.wait(0.08)
 
 
+def _happy_jacks_loop():
+    _gc._on(); _gc._bright(100)
+    session = _gc._session_id
+    t0 = time.time()
+
+    # warm slot-machine keyframes with a neon bleed accent, breathed independently per side
+    keyframes = [(200, 110, 20), (255, 180, 60), (255, 90, 160)]
+    left_cycle = random.uniform(6.0, 8.0)
+    right_cycle = random.uniform(6.0, 8.0)
+    left_phase = random.uniform(0, 1)
+    right_phase = random.uniform(0, 1)
+
+    next_flash = t0 + random.uniform(6.0, 14.0)
+    flash_start = None
+    flash_side = None
+    flash_duration = 0.4
+
+    def breathe(t, cycle, phase):
+        tt = ((t / cycle) + phase) % 1.0
+        seg = tt * len(keyframes)
+        i = int(seg) % len(keyframes)
+        frac = (1 - math.cos((seg - int(seg)) * math.pi)) / 2
+        c0 = keyframes[i]; c1 = keyframes[(i + 1) % len(keyframes)]
+        return [int(c0[k] + (c1[k] - c0[k]) * frac) for k in range(3)]
+
+    while not _gc._stop.is_set() and _gc._session_id == session:
+        if _gc._burst_active:
+            _gc._stop.wait(0.05); continue
+        now = time.time()
+        t = now - t0
+
+        lc = breathe(t, left_cycle, left_phase)
+        rc = breathe(t, right_cycle, right_phase)
+
+        if flash_start is None and now >= next_flash:
+            flash_start = now
+            flash_side = random.choice(['left', 'right'])
+        if flash_start is not None:
+            ft = now - flash_start
+            if ft >= flash_duration:
+                flash_start = None
+                next_flash = now + random.uniform(6.0, 14.0)
+            else:
+                v = math.sin(math.pi * ft / flash_duration)
+                target = lc if flash_side == 'left' else rc
+                for k in range(3):
+                    target[k] = int(target[k] + (255 - target[k]) * v)
+
+        _gc._seg_colors([(lc[0], lc[1], lc[2], _gc.LEFT_MASK), (rc[0], rc[1], rc[2], _gc.RIGHT_MASK)])
+        _gc._stop.wait(0.05)
+
+
 def _static_loop(r, g, b, brightness=100):
     _gc._on(); _gc._bright(brightness)
     session = _gc._session_id
@@ -567,6 +619,7 @@ SCENES = {
     'rich-district': lambda: _gc._run(_rich_district_loop),
     'corp-lab': lambda: _gc._run(_corp_lab_loop),
     'bus-stop': lambda: _gc._run(_bus_stop_loop),
+    'happy-jacks': lambda: _gc._run(_happy_jacks_loop),
     'calm-blue':        lambda: _gc._run(_static_loop, 165, 195, 255),
     'draconis':  lambda: _gc._run(_draconis_hb_loop,   80, 200,  10),
     'autodestruct': lambda: _gc._run(_draconis_pulse_loop, 255, 80, 0, 1.8, 0.05, 1.0),
