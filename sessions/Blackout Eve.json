@@ -11,7 +11,7 @@
       "id": "scene-1788110894894",
       "name": "Station Briefing",
       "spotify": {
-        "uri": "https://open.spotify.com/playlist/1bKIgpLiVrZPrAwc4jxr6e?si=8K2SIzdwSxGPwxD3JJw-Bg",
+        "uri": "https://open.spotify.com/playlist/6sWIrWnwm2YL45BpHCKSwC?si=lrpDAvISR3etDZEbMWDZfg",
         "volume": 50
       },
       "triggers": []
@@ -72,6 +72,7 @@
       "id": "scene-1788111180713",
       "name": "Meeting Roland",
       "spotify": {
+        "start_time": 12,
         "uri": "https://open.spotify.com/playlist/15goCkkYLDi2AzOMv7jgzw",
         "volume": 50
       },
@@ -87,7 +88,7 @@
       "id": "scene-1788111204568",
       "name": "Chase",
       "spotify": {
-        "uri": "https://open.spotify.com/playlist/5sIK67b2mVXS0dItnHrrF0",
+        "uri": "https://open.spotify.com/playlist/1tGebjqPVf6kwNy3MShLem",
         "volume": 50
       },
       "triggers": []
@@ -102,6 +103,7 @@
       "id": "scene-1788111208640",
       "name": "Back to the station",
       "spotify": {
+        "start_time": 12,
         "uri": "https://open.spotify.com/playlist/15goCkkYLDi2AzOMv7jgzw",
         "volume": 50
       },
@@ -117,9 +119,9 @@
       "id": "scene-1788111215580",
       "name": "The trial",
       "spotify": {
+        "start_time": 25,
         "uri": "https://open.spotify.com/album/73JQnkZK21PuqE4qF3TLJE",
-        "volume": 50,
-        "start_time": 25
+        "volume": 50
       },
       "triggers": []
     },
@@ -145,6 +147,11 @@
       "file": "freesound/freesound-casino.ogg",
       "source_name": "freesound-casino.ogg"
     },
+    "freesound-street": {
+      "duration_ms": 57900,
+      "file": "freesound/freesound-street.ogg",
+      "source_name": "freesound-street.ogg"
+    },
     "freesound-voices-office_ambient": {
       "duration_ms": 0,
       "file": "freesound/voices/freesound-voices-office_ambient.ogg",
@@ -159,11 +166,6 @@
       "duration_ms": 0,
       "file": "freesound/weather/freesound-weather-traffic on rain.ogg",
       "source_name": "freesound-weather-traffic on rain.ogg"
-    },
-    "freesound-street": {
-      "file": "freesound-street.ogg",
-      "source_name": "freesound-street.ogg",
-      "duration_ms": 57900
     }
   }
 }
