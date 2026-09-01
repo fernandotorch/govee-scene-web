@@ -285,15 +285,22 @@ def _bus_stop_loop():
     _gc._on(); _gc._bright(100)
     session = _gc._session_id
     t0 = time.time()
-    next_sweep = t0 + random.uniform(8.0, 15.0)
-    next_neon = t0 + random.uniform(15.0, 30.0)
+    next_sweep = t0 + random.uniform(4.0, 8.0)
     sweep_start = None
-    sweep_dir = 1
-    sweep_duration = 0.75
-    neon_start = None
-    neon_side = None
-    neon_duration = 3.0
+    sweep_rise = 0.7
+    sweep_hold = 0.15
+    sweep_fall = 0.35
+    sweep_duration = sweep_rise + sweep_hold + sweep_fall
     shimmer_phase = [random.uniform(0, 6.28) for _ in range(10)]
+
+    # neon sign: fixed side for the whole scene, always faintly lit, buzzes/flickers periodically
+    neon_side = random.choice([range(0, 5), range(5, 10)])
+    neon_base_blend = 0.22
+    next_flicker = t0 + random.uniform(3.0, 6.0)
+    flicker_start = None
+    flicker_duration = 0.0
+    flicker_stutters = 1
+
     while not _gc._stop.is_set() and _gc._session_id == session:
         if _gc._burst_active:
             _gc._stop.wait(0.05); continue
@@ -306,40 +313,45 @@ def _bus_stop_loop():
             scale = 0.75 + 0.35 * shimmer
             base.append([int(55 * scale), int(70 * scale), int(100 * scale)])
 
-        if neon_start is None and now >= next_neon:
-            neon_start = now
-            neon_side = random.choice([range(0, 5), range(5, 10)])
-        if neon_start is not None:
-            nt = now - neon_start
-            if nt >= neon_duration:
-                neon_start = None
-                next_neon = now + random.uniform(15.0, 30.0)
+        if flicker_start is None and now >= next_flicker:
+            flicker_start = now
+            flicker_duration = random.uniform(0.12, 0.35)
+            flicker_stutters = random.choice([1, 1, 1, 2, 3])
+        if flicker_start is not None:
+            ft = now - flicker_start
+            cycle = flicker_duration * 2.2
+            if ft >= cycle * flicker_stutters:
+                flicker_start = None
+                next_flicker = now + random.uniform(3.0, 7.0)
+                neon_blend = neon_base_blend
             else:
-                envelope = math.sin(math.pi * nt / neon_duration)
-                blend = 0.55 * envelope
-                for i in neon_side:
-                    base[i][0] = int(base[i][0] + (180 - base[i][0]) * blend)
-                    base[i][1] = int(base[i][1] + (15 - base[i][1]) * blend)
-                    base[i][2] = int(base[i][2] + (20 - base[i][2]) * blend)
+                neon_blend = 0.55 if (ft % cycle) < flicker_duration else 0.10
+        else:
+            neon_blend = neon_base_blend
+
+        for i in neon_side:
+            base[i][0] = int(base[i][0] + (180 - base[i][0]) * neon_blend)
+            base[i][1] = int(base[i][1] + (15 - base[i][1]) * neon_blend)
+            base[i][2] = int(base[i][2] + (20 - base[i][2]) * neon_blend)
 
         if sweep_start is None and now >= next_sweep:
             sweep_start = now
-            sweep_dir = random.choice([1, -1])
         if sweep_start is not None:
             st = now - sweep_start
             if st >= sweep_duration:
                 sweep_start = None
-                next_sweep = now + random.uniform(8.0, 15.0)
+                next_sweep = now + random.uniform(4.0, 8.0)
             else:
-                progress = st / sweep_duration
-                pos = progress * 9 if sweep_dir == 1 else (1 - progress) * 9
+                if st < sweep_rise:
+                    v = (st / sweep_rise) ** 2
+                elif st < sweep_rise + sweep_hold:
+                    v = 1.0
+                else:
+                    v = max(0.0, 1.0 - (st - sweep_rise - sweep_hold) / sweep_fall)
                 for i in range(10):
-                    dist = abs(i - pos)
-                    if dist < 1.6:
-                        v = max(0.0, 1.0 - dist / 1.6)
-                        base[i][0] = int(base[i][0] + (225 - base[i][0]) * v)
-                        base[i][1] = int(base[i][1] + (225 - base[i][1]) * v)
-                        base[i][2] = int(base[i][2] + (210 - base[i][2]) * v)
+                    base[i][0] = int(base[i][0] + (255 - base[i][0]) * v)
+                    base[i][1] = int(base[i][1] + (255 - base[i][1]) * v)
+                    base[i][2] = int(base[i][2] + (240 - base[i][2]) * v)
 
         packet = [(base[i][0], base[i][1], base[i][2], 1 << i) for i in range(10)]
         _gc._seg_colors(packet)
