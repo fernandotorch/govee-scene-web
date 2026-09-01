@@ -118,7 +118,22 @@
       "id": "scene-1788111215580",
       "name": "The trial",
       "spotify": {
-        "uri": "",
+        "uri": "https://open.spotify.com/track/2FrRJZSMt1vTNOuJDlRBPk",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1788283684598",
+      "name": "Resolution",
+      "govee_effect": {
+        "ref": "calm-blue",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "https://open.spotify.com/album/5aNhFPqEcJHzP0Yrrs8v50",
         "volume": 50
       },
       "triggers": []
