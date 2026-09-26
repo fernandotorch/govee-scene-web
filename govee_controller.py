@@ -15,6 +15,7 @@ import math
 import os
 import sys
 import subprocess
+import glob
 import hashlib
 import zipfile
 import tempfile
@@ -274,6 +275,52 @@ def spotify_playlists():
         return jsonify(data)
     return jsonify(_load_spotify_playlists())
 
+@app.route("/api/triggers")
+def list_triggers():
+    """Every trigger across every session, deduped. Derived, never stored — the
+    library is always exactly what exists on disk."""
+    entries = {}
+    for session_path in sorted(glob.glob(os.path.join(SESSIONS_DIR, "*.json"))):
+        try:
+            with open(session_path) as f:
+                data = json.load(f)
+        except Exception:
+            continue
+        manifest = data.get("audio_manifest", {})
+        session_label = os.path.splitext(os.path.basename(session_path))[0]
+        for scene in data.get("scenes", []):
+            for trig in scene.get("triggers", []):
+                name = (trig.get("name") or "").strip()
+                if not name:
+                    continue
+                sound = trig.get("sound") or ""
+                flash = trig.get("govee_flash") or None
+                flash_ref = flash.get("ref") if isinstance(flash, dict) else None
+                key = (name.lower(), sound, flash_ref or "")
+                entry = entries.get(key)
+                if entry is None:
+                    audio = None
+                    if sound and sound in manifest:
+                        info = manifest[sound]
+                        rel = info.get("file", "")
+                        audio = {
+                            "file": rel,
+                            "source_name": info.get("source_name") or os.path.basename(rel),
+                            "duration_ms": info.get("duration_ms", 0),
+                            "missing": not os.path.exists(os.path.join(SFX_DIR, rel)),
+                        }
+                    entry = entries[key] = {
+                        "id": "lib-" + hashlib.md5("|".join(key).encode("utf-8")).hexdigest()[:12],
+                        "name": name,
+                        "sound": sound,
+                        "govee_flash": flash,
+                        "audio": audio,
+                        "sources": [],
+                    }
+                if session_label not in entry["sources"]:
+                    entry["sources"].append(session_label)
+    return jsonify(sorted(entries.values(), key=lambda e: e["name"].lower()))
+
 @app.route("/api/sfx/tree")
 def get_sfx_tree():
     path = request.args.get("path", "")
@@ -288,6 +335,16 @@ def get_sfx_tree():
             "path": os.path.relpath(entry.path, SFX_DIR)
         })
     return jsonify(sorted(items, key=lambda x: (not x["is_dir"], x["name"])))
+
+@app.route("/api/sfx/info")
+def get_sfx_info():
+    rel_path = request.args.get("path", "")
+    full_path = os.path.join(SFX_DIR, rel_path)
+    if not os.path.abspath(full_path).startswith(os.path.abspath(SFX_DIR)):
+        return jsonify({"error": "unauthorized"}), 403
+    if not os.path.exists(full_path):
+        return jsonify({"error": "not found"}), 404
+    return jsonify({"duration_ms": int((_get_duration(full_path) or 0) * 1000)})
 
 @app.route("/api/upload", methods=["POST"])
 def upload_sfx():
@@ -401,6 +458,67 @@ def _run_ffmpeg_with_progress(in_path, out_path, duration):
             except: pass
     process.wait()
 
+def _trim_trailing_silence(source_path):
+    """Trims trailing silence from source_path keeping a 0.3s tail.
+    Uses cached result in UPLOADS_DIR/trim_cache keyed by sha1(abs path + mtime + size).
+    Returns path to trimmed file, or None if ffmpeg fails or result < 50ms."""
+    try:
+        abs_path = os.path.abspath(source_path)
+        if not os.path.exists(abs_path):
+            return None
+        stat = os.stat(abs_path)
+        key_str = f"{abs_path}{stat.st_mtime}{stat.st_size}"
+        cache_key = hashlib.sha1(key_str.encode('utf-8')).hexdigest()
+        cache_dir = os.path.join(UPLOADS_DIR, 'trim_cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        cached_path = os.path.join(cache_dir, f"{cache_key}.ogg")
+        if os.path.exists(cached_path) and os.path.getsize(cached_path) > 0:
+            if _get_duration(cached_path) >= 0.05:
+                return cached_path
+
+        temp_out = os.path.join(cache_dir, f"tmp_{os.getpid()}_{threading.get_ident()}_{cache_key}.ogg")
+        cmd = [
+            'ffmpeg', '-y', '-i', source_path,
+            '-af', 'areverse,silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.3,areverse',
+            '-c:a', 'libvorbis', '-q:a', '4',
+            temp_out
+        ]
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode != 0 or not os.path.exists(temp_out):
+            if os.path.exists(temp_out):
+                try: os.remove(temp_out)
+                except: pass
+            return None
+
+        dur = _get_duration(temp_out)
+        if dur < 0.05:
+            try: os.remove(temp_out)
+            except: pass
+            return None
+
+        os.replace(temp_out, cached_path)
+        return cached_path
+    except Exception:
+        return None
+
+trim_trailing_silence = _trim_trailing_silence
+
+def _write_to_zip_with_trim(z, source_ogg_path, base_id, info, should_trim, warnings, audio_id, zip_manifest):
+    if should_trim:
+        filename = info.get('file', os.path.basename(source_ogg_path))
+        old_dur = _get_duration(source_ogg_path)
+        trimmed_path = _trim_trailing_silence(source_ogg_path)
+        if trimmed_path:
+            new_dur = _get_duration(trimmed_path)
+            dur_ms = int(round(new_dur * 1000))
+            info['duration_ms'] = dur_ms
+            zip_manifest[audio_id]['duration_ms'] = dur_ms
+            z.write(trimmed_path, base_id + '.ogg')
+            print(f"Trimmed {filename}: {old_dur:.1f}s -> {new_dur:.1f}s")
+            return
+        warnings.append(f"Trim skipped: {filename}")
+    z.write(source_ogg_path, base_id + '.ogg')
+
 def _do_export(data):
     global _export_progress, _export_result
     try:
@@ -410,6 +528,18 @@ def _do_export(data):
         zip_filename = f"{safe_name}.zip"; zip_path = os.path.join(PACKS_DIR, zip_filename)
         warnings = []
         zip_manifest = copy.deepcopy(audio_manifest)
+        trigger_audio_ids = set()
+        ambient_audio_ids = set()
+        for sc in scenes:
+            amb = sc.get("ambient")
+            if amb:
+                ambient_audio_ids.add(amb)
+                ambient_audio_ids.add(re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif|m4a)$', '', amb, flags=re.IGNORECASE))
+            for tr in sc.get("triggers", []):
+                snd = tr.get("sound")
+                if snd:
+                    trigger_audio_ids.add(snd)
+                    trigger_audio_ids.add(re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif|m4a)$', '', snd, flags=re.IGNORECASE))
         with zipfile.ZipFile(zip_path, 'w', allowZip64=True) as z:
             for i, (audio_id, info) in enumerate(zip_manifest.items()):
                 _export_progress["current"] = i + 1
@@ -450,9 +580,11 @@ def _do_export(data):
                 if file_size_mb > 20 and ext == ".ogg":
                     warnings.append(f"Large OGG ({file_size_mb:.0f} MB): {info['file']} - consider shorter loop")
                 base_id = re.sub(r'\.(ogg|wav|mp3|flac|aiff|aif|m4a)$', '', audio_id, flags=re.IGNORECASE)
+                should_trim = (audio_id in trigger_audio_ids or base_id in trigger_audio_ids) and not (audio_id in ambient_audio_ids or base_id in ambient_audio_ids)
                 if ext == '.ogg':
                     _export_progress['file_percent'] = 100
-                    z.write(audio_path, base_id + '.ogg'); info['file'] = base_id + '.ogg'
+                    info['file'] = base_id + '.ogg'
+                    _write_to_zip_with_trim(z, audio_path, base_id, info, should_trim, warnings, audio_id, zip_manifest)
                 else:
                     final_ogg_path = os.path.join(os.path.dirname(audio_path), base_id + '.ogg')
                     try:
@@ -464,7 +596,7 @@ def _do_export(data):
                             if audio_id in audio_manifest:
                                 audio_manifest[audio_id]['file'] = base_id + '.ogg'
                                 audio_manifest[audio_id]['source_name'] = base_id + '.ogg'
-                            z.write(final_ogg_path, base_id + '.ogg')
+                            _write_to_zip_with_trim(z, final_ogg_path, base_id, info, should_trim, warnings, audio_id, zip_manifest)
                             new_size_mb = os.path.getsize(final_ogg_path) / (1024 * 1024)
                             if new_size_mb > 20:
                                 warnings.append(f"Still large after conversion ({new_size_mb:.0f} MB): {info['file']}")

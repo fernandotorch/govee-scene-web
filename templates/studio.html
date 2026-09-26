@@ -24,11 +24,15 @@
   #sound-panel { flex: 1; }
 
   /* Scene cards */
-  .item { background: var(--panel); padding: 10px; margin-bottom: 6px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; }
+  .item { background: var(--panel); padding: 10px; margin-bottom: 6px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; user-select: none; -webkit-user-select: none; }
   .item:hover { border-color: var(--accent); }
   .item.active { border-color: var(--accent); background: #252525; }
   .item.dragging { opacity: 0.4; }
   .item.drag-over { border-color: var(--accent); border-style: dashed; }
+  /* The scenes list is also the panel-content element, so a press that misses a
+     row lands on the container. Without this a drag gesture there starts a text
+     selection that then swallows subsequent clicks. */
+  #scenes-list { user-select: none; -webkit-user-select: none; }
 
   /* Editor field layout */
   .field-label { font-size: 0.7em; text-transform: uppercase; color: #666; letter-spacing: 1px; margin: 14px 0 4px; }
@@ -244,6 +248,18 @@ let _dragIndex = null;    // scene index being reordered
 let _dragTriggerIndex = null; // trigger index being reordered within a scene
 let _dragEffectRef = null;    // effect ref being dragged from the light panel
 let _dragSpotifyUri = null;
+
+// Every drag source clears all drag state before setting its own. Without this,
+// a drag that failed to start leaves its variable set and silently blocks the
+// scene reorder drop checks for the rest of the session.
+function _resetDragState() {
+  _dragAudioId = null; _dragAudioPath = null; _dragIndex = null;
+  _dragTriggerIndex = null; _dragEffectRef = null; _dragSpotifyUri = null;
+}
+// If a drag source is destroyed mid-drag, dragend never fires and the drag state
+// would leak. Clear it on drop as well, at the document level.
+document.addEventListener('drop', () => setTimeout(_resetDragState, 0), true);
+document.addEventListener('dragend', () => _resetDragState(), true);
 let spotifyPlaylists = [];
 
 function persistSpotifyPlaylists() {
@@ -264,7 +280,7 @@ function renderSpotifyList() {
   el.innerHTML = list.map((item, i) => `
     <div class="spotify-item" draggable="true"
          data-uri="${item.uri.replace(/"/g,'&quot;')}"
-         ondragstart="onSpotifyDragStart(this)" ondragend="onSpotifyDragEnd()"
+         ondragstart="onSpotifyDragStart(event, this)" ondragend="onSpotifyDragEnd()"
          ondblclick="if(activeSceneIndex>=0){updateScene('spotify',{...scenes[activeSceneIndex].spotify,uri:this.dataset.uri});}">
       <span style="color:var(--accent);font-size:10px;">♫</span>
       <span class="spotify-item-name" title="${item.uri.replace(/"/g,'&quot;')}">${item.name}</span>
@@ -303,7 +319,13 @@ function openSpotifyUri(uri) {
   a.click();
   setTimeout(() => document.body.removeChild(a), 100);
 }
-function onSpotifyDragStart(el) { _dragSpotifyUri = el.dataset.uri; el.classList.add('dragging-spotify'); }
+function onSpotifyDragStart(e, el) {
+  _resetDragState();
+  _dragSpotifyUri = el.dataset.uri;
+  el.classList.add('dragging-spotify');
+  e.dataTransfer.effectAllowed = 'copy';
+  try { e.dataTransfer.setData('text/plain', el.dataset.uri); } catch (_) {}
+}
 function onSpotifyDragEnd() {
   document.querySelectorAll('.dragging-spotify').forEach(e => e.classList.remove('dragging-spotify'));
   _dragSpotifyUri = null;
@@ -313,14 +335,13 @@ let _previewAudioPath = null;
 let _previewingEffect = null; // currently active preview effect (null = off)
 let _dirty = false;       // true when there are unsaved changes
 
-// ── Global trigger library (persists across sessions via localStorage) ────────
-
-function _loadGlobalLibrary() {
-  try { return JSON.parse(localStorage.getItem('govee-trigger-library') || '[]'); }
-  catch { return []; }
-}
-function _saveGlobalLibrary() {
-  localStorage.setItem('govee-trigger-library', JSON.stringify(triggerLibrary));
+// ── Trigger library (derived server-side from every session) ─────────────────
+async function refreshTriggerLibrary() {
+  try {
+    const res = await fetch('/api/triggers');
+    triggerLibrary = await res.json();
+  } catch { triggerLibrary = []; }
+  renderTriggerLibrary();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -331,9 +352,8 @@ async function init() {
   const rootData = await rootRes.json();
   spotifyPlaylists = await spotRes.json();
   document.getElementById('sfx-root-display').textContent = rootData.path;
-  triggerLibrary = _loadGlobalLibrary();
   renderScenes(); renderExplorer(); renderEffects();
-  renderSpotifyList(); renderTriggerLibrary();
+  renderSpotifyList(); refreshTriggerLibrary();
 }
 
 let _toastTimer = null;
@@ -433,11 +453,9 @@ async function saveSession() {
       return;
     }
     _dirty = false;
-    for (const scene of scenes)
-      for (const t of (scene.triggers || []))
-        _upsertTriggerToLibrary(t);
-    _saveGlobalLibrary();
-    renderTriggerLibrary();
+    // The server derives the library from the session files, so a save is all
+    // it takes for new triggers to appear.
+    refreshTriggerLibrary();
     _syncPack();
   } catch (e) {
     alert('Save failed — server unreachable: ' + e.message);
@@ -576,9 +594,11 @@ function deleteScene(index) {
 }
 
 function onScenesDragStart(e, index) {
-  _dragIndex = index; _dragAudioId = null;
+  _resetDragState();
+  _dragIndex = index;
   e.currentTarget.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', 'scene:' + index); } catch (_) {}
 }
 function onScenesDragOver(e) {
   if (_dragAudioId !== null || _dragEffectRef !== null || _dragSpotifyUri !== null) return;
@@ -592,9 +612,15 @@ function onScenesDrop(e, targetIndex) {
   const moved = scenes.splice(_dragIndex, 1)[0];
   scenes.splice(targetIndex, 0, moved);
   activeSceneIndex = targetIndex; _dragIndex = null;
-  renderScenes();
+  // Deferred: re-rendering here would destroy the drag source mid-drag, so
+  // dragend would never fire and the drag session would never end.
+  setTimeout(renderScenes, 0);
 }
-function onScenesDragEnd(e) { e.currentTarget.classList.remove('dragging'); _dragIndex = null; }
+function onScenesDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  _dragIndex = null;
+}
 
 function selectScene(index) {
   activeSceneIndex = index;
@@ -670,7 +696,7 @@ function renderTriggerCard(t, i) {
   const soundLabel = t.sound ? (library[t.sound]?.source_name || t.sound) : null;
   return `
     <div class="trigger-card" draggable="true"
-         ondragstart="_dragTriggerIndex=${i}; _dragAudioId=null; _dragEffectRef=null; this.classList.add('dragging');"
+         ondragstart="_resetDragState(); _dragTriggerIndex=${i}; this.classList.add('dragging'); event.dataTransfer.effectAllowed='move'; try{event.dataTransfer.setData('text/plain','trigger:${i}');}catch(_){}"
          ondragend="_dragTriggerIndex=null; document.querySelectorAll('.trigger-card').forEach(c=>c.classList.remove('drag-over','dragging'));"
          ondragover="if(_dragTriggerIndex!==null&&_dragTriggerIndex!==${i}){event.preventDefault();this.classList.add('drag-over');}else if(_dragAudioId||_dragEffectRef){event.preventDefault();this.classList.add('drop-active');}"
          ondragleave="this.classList.remove('drop-active','drag-over');"
@@ -698,25 +724,15 @@ function renderTriggerCard(t, i) {
 
 // ── Trigger Library ───────────────────────────────────────────────────────────
 
-function _upsertTriggerToLibrary(t) {
-  if (!t.sound && !t.govee_flash) return;
-  const existing = triggerLibrary.find(e => e.name === t.name);
-  if (existing) {
-    existing.sound = t.sound;
-    existing.govee_flash = t.govee_flash;
-  } else {
-    triggerLibrary.push({ id: `tlib-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: t.name, sound: t.sound, govee_flash: t.govee_flash });
-  }
-}
-
 function previewLibraryTrigger(libId) {
   const entry = triggerLibrary.find(e => e.id === libId);
   if (!entry) return;
   if (entry.govee_flash?.ref) {
     fetch(`/api/effects/${entry.govee_flash.ref}/preview`, { method: "POST" });
   }
-  if (entry.sound && library[entry.sound]) {
-    const path = library[entry.sound].file;
+  const audioPath = library[entry.sound]?.file || entry.audio?.file;
+  if (entry.sound && audioPath) {
+    const path = audioPath;
     const encodedPath = path.split("/").map(s => encodeURIComponent(s)).join("/");
     const audio = new Audio(`/api/sfx/file/${encodedPath}`);
     audio.play().catch(() => {});
@@ -727,6 +743,15 @@ function applyLibraryTrigger(libId) {
   if (activeSceneIndex < 0) { alert('Select a scene first.'); return; }
   const entry = triggerLibrary.find(e => e.id === libId);
   if (!entry) return;
+  // The sound may come from a different session, so make sure this session's
+  // manifest knows about it — otherwise the export reports it missing.
+  if (entry.sound && entry.audio && !library[entry.sound]) {
+    library[entry.sound] = {
+      file: entry.audio.file,
+      source_name: entry.audio.source_name,
+      duration_ms: entry.audio.duration_ms || 0
+    };
+  }
   scenes[activeSceneIndex].triggers.push({
     id: `trigger-${Date.now()}`, name: entry.name,
     sound: entry.sound || "", govee_flash: entry.govee_flash || null
@@ -735,32 +760,26 @@ function applyLibraryTrigger(libId) {
   renderEditor();
 }
 
-function removeLibraryTrigger(libId) {
-  triggerLibrary = triggerLibrary.filter(e => e.id !== libId);
-  _saveGlobalLibrary();
-  _dirty = true;
-  renderTriggerLibrary();
-}
-
 function renderTriggerLibrary() {
   const el = document.getElementById('trigger-library-list');
   if (!el) return;
   if (triggerLibrary.length === 0) {
-    el.innerHTML = '<div style="color:#444; font-size:0.82em; padding:4px 0;">No triggers yet — save a session to populate the library.</div>';
+    el.innerHTML = '<div style="color:#444; font-size:0.82em; padding:4px 0;">No triggers yet — add one to a scene and save.</div>';
     return;
   }
   el.innerHTML = triggerLibrary.map(entry => {
-    const soundLabel = entry.sound ? (library[entry.sound]?.source_name || entry.sound) : null;
+    const soundLabel = entry.audio?.source_name || entry.sound || null;
     const flashLabel = entry.govee_flash?.ref
       ? (effects.find(e => e.ref === entry.govee_flash.ref)?.name || entry.govee_flash.ref)
       : null;
+    const missing = entry.audio?.missing;
     const meta = [flashLabel, soundLabel].filter(Boolean).join(' · ');
-    return `<div class="tlib-card">
-      <span class="tlib-name" title="${entry.name.replace(/"/g,'&quot;')}">${entry.name}</span>
-      <span class="tlib-meta" title="${meta}">${meta || '—'}</span>
+    const title = (entry.sources || []).join(', ');
+    return `<div class="tlib-card" style="${missing ? 'opacity:0.5;' : ''}">
+      <span class="tlib-name" title="${(entry.name + (title ? ' — used in ' + title : '')).replace(/"/g,'&quot;')}">${missing ? '⚠ ' : ''}${entry.name}</span>
+      <span class="tlib-meta" title="${meta.replace(/"/g,'&quot;')}">${meta || '—'}</span>
       <button class="icon" title="Preview trigger" onclick="previewLibraryTrigger('${entry.id}')">▶</button>
       <button class="icon" title="Add to current scene" onclick="applyLibraryTrigger('${entry.id}')">→</button>
-      <button class="icon" title="Remove from library" onclick="removeLibraryTrigger('${entry.id}')">×</button>
     </div>`;
   }).join('');
 }
@@ -783,13 +802,13 @@ function _registerAudio(audioId, path) {
   const existing = library[audioId];
   library[audioId] = { file: path, source_name: path.split("/").pop(), duration_ms: existing?.duration_ms ?? 0 };
   if (!existing) {
-    fetch("/api/normalize-audio", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path })
-    }).then(r => r.json()).then(data => {
-      if (data.ok && data.duration_ms) library[audioId].duration_ms = data.duration_ms;
-    }).catch(() => {});
+    // Read the duration only. This used to POST to /api/normalize-audio, which
+    // re-encodes the file in place at I=-14 and undid the -20 LUFS bed targets.
+    fetch(`/api/sfx/info?path=${encodeURIComponent(path)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.duration_ms) library[audioId].duration_ms = data.duration_ms;
+      }).catch(() => {});
   }
 }
 
@@ -798,20 +817,23 @@ function onAmbientDrop(e) {
   if (!_dragAudioId) return;
   _registerAudio(_dragAudioId, _dragAudioPath);
   _dirty = true;
-  updateScene('ambient', _dragAudioId);
+  // updateScene() re-renders, so set the field directly and defer the renders.
+  scenes[activeSceneIndex].ambient = _dragAudioId;
   _dragAudioId = null; _dragAudioPath = null;
-  renderEditor();
+  setTimeout(() => { renderScenes(); renderEditor(); }, 0);
 }
 
 function onTriggerDrop(e, index) {
   e.preventDefault();
+  // Every re-render below is deferred: doing it inside the drop handler destroys
+  // the drag source and the browser never fires dragend.
   if (_dragTriggerIndex !== null && _dragTriggerIndex !== index) {
     const triggers = scenes[activeSceneIndex].triggers;
     const moved = triggers.splice(_dragTriggerIndex, 1)[0];
     triggers.splice(index, 0, moved);
     _dragTriggerIndex = null;
     _dirty = true;
-    renderEditor();
+    setTimeout(renderEditor, 0);
     return;
   }
   _dragTriggerIndex = null;
@@ -820,12 +842,12 @@ function onTriggerDrop(e, index) {
     _dirty = true;
     scenes[activeSceneIndex].triggers[index].sound = _dragAudioId;
     _dragAudioId = null; _dragAudioPath = null;
-    renderEditor();
+    setTimeout(renderEditor, 0);
   }
   if (_dragEffectRef) {
     scenes[activeSceneIndex].triggers[index].govee_flash = { ref: _dragEffectRef };
     _dirty = true;
-    renderEditor();
+    setTimeout(renderEditor, 0);
   }
 }
 
@@ -891,12 +913,20 @@ function previewTrigger(index) {
 }
 
 function onSfxDragStart(e, audioId, path) {
+  _resetDragState();
   _dragAudioId = audioId; _dragAudioPath = path;
-  _registerAudio(audioId, path);
   e.currentTarget.classList.add('dragging-file');
   e.dataTransfer.effectAllowed = 'copy';
+  // Firefox will not begin a drag unless dataTransfer carries something. Without
+  // this the mousedown is swallowed, no drag starts and no dragend fires, which
+  // leaves the pointer stuck.
+  try { e.dataTransfer.setData('text/plain', audioId); } catch (_) {}
 }
-function onSfxDragEnd(e) { e.currentTarget.classList.remove('dragging-file'); }
+function onSfxDragEnd(e) {
+  e.currentTarget.classList.remove('dragging-file');
+  // Clear drag state so an aborted drag cannot leak into the next drop.
+  _dragAudioId = null; _dragAudioPath = null;
+}
 
 function onSfxDblClick(audioId, path, name) {
   _registerAudio(audioId, path);
@@ -955,9 +985,11 @@ function onEffectDblClick(ref) {
 }
 
 function onEffectDragStart(e, ref) {
-  _dragEffectRef = ref; _dragAudioId = null;
+  _resetDragState();
+  _dragEffectRef = ref;
   e.currentTarget.classList.add('dragging-file');
   e.dataTransfer.effectAllowed = 'copy';
+  try { e.dataTransfer.setData('text/plain', 'effect:' + ref); } catch (_) {}
 }
 function onEffectDragEnd(e) { _dragEffectRef = null; e.currentTarget.classList.remove('dragging-file'); }
 
