@@ -2,7 +2,22 @@
   "name": "Disruption",
   "scenes": [
     {
-      "ambient": "freesound-weather-rain",
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "lyra-apartment"
+      },
+      "id": "scene-1789750180203",
+      "name": "The meeting",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/1ExPXsieweUMDoa7URGsNu?si=DOBZqJYqRmmg9PUmYQ53fg",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "ambient": null,
       "ambient_volume": 68,
       "govee_effect": {
         "definition": {},
@@ -25,13 +40,45 @@
         },
         {
           "govee_flash": {
-            "ref": "white-burst"
+            "ref": "smg-burst"
           },
-          "id": "trigger-1778344592089",
-          "name": "Shooting",
-          "sound": "freesound-guns and explosions-418431__craftyindividual__fnp90-burst"
+          "id": "trigger-1789752049031",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1789752050965",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1789752101005",
+          "name": "Shotgun",
+          "sound": "freesound-guns and explosions-shotgun"
         }
       ]
+    },
+    {
+      "ambient": null,
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "corp-lab"
+      },
+      "id": "scene-1789754949865",
+      "name": "Diva",
+      "spotify": {
+        "start_time": 0,
+        "uri": "https://open.spotify.com/track/3oHSL6pt9LpNrQZuQGu9wL",
+        "volume": 50
+      },
+      "triggers": []
     },
     {
       "ambient": null,
@@ -46,10 +93,58 @@
         "uri": "https://open.spotify.com/playlist/7AjzPIuaOEx1pdHv459Lda?si=-FEW_bfrQFmnlgqhLmHfVQ",
         "volume": 26
       },
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "orange-burst"
+          },
+          "id": "trigger-1789750602266",
+          "name": "Explosion",
+          "sound": "freesound-guns and explosions-760509__samsterbirdies__astronomical-explosion"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1789751818045",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1789751820487",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1789752093033",
+          "name": "Shotgun",
+          "sound": "freesound-guns and explosions-shotgun"
+        }
+      ]
+    },
+    {
+      "ambient": "freesound-weather-waves_against_rocks",
+      "ambient_volume": 50,
+      "govee_effect": {
+        "definition": {},
+        "ref": "brave-sea"
+      },
+      "id": "scene-1789754790280",
+      "name": "Boat",
+      "spotify": {
+        "uri": "https://open.spotify.com/playlist/1ExPXsieweUMDoa7URGsNu?si=DOBZqJYqRmmg9PUmYQ53fg",
+        "volume": 50
+      },
       "triggers": []
     },
     {
-      "ambient": "freesound-weather-rain",
+      "ambient": "freesound-weather-waves_against_rocks",
       "ambient_volume": 95,
       "govee_effect": {
         "definition": {},
@@ -76,7 +171,32 @@
         "uri": "https://open.spotify.com/playlist/1ExPXsieweUMDoa7URGsNu?si=DOBZqJYqRmmg9PUmYQ53fg",
         "volume": 50
       },
-      "triggers": []
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1789751771263",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1789751782167",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1789751801422",
+          "name": "Shotgun",
+          "sound": "freesound-guns and explosions-shotgun"
+        }
+      ]
     },
     {
       "ambient": null,
@@ -91,7 +211,32 @@
         "uri": "",
         "volume": 50
       },
-      "triggers": []
+      "triggers": [
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1789752069355",
+          "name": "pistol",
+          "sound": "freesound-guns and explosions-pistol"
+        },
+        {
+          "govee_flash": {
+            "ref": "smg-burst"
+          },
+          "id": "trigger-1789752072217",
+          "name": "auto-fire",
+          "sound": "freesound-guns and explosions-autofire"
+        },
+        {
+          "govee_flash": {
+            "ref": "fire-spark"
+          },
+          "id": "trigger-1789752074473",
+          "name": "Shotgun",
+          "sound": "freesound-guns and explosions-shotgun"
+        }
+      ]
     }
   ],
   "audio_manifest": {
@@ -103,6 +248,21 @@
       "file": "freesound/guns and explosions/760509__samsterbirdies__astronomical-explosion.ogg",
       "source_name": "760509__samsterbirdies__astronomical-explosion.ogg"
     },
+    "freesound-guns and explosions-autofire": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/autofire.ogg",
+      "source_name": "autofire.ogg"
+    },
+    "freesound-guns and explosions-pistol": {
+      "duration_ms": 0,
+      "file": "freesound/guns and explosions/freesound-guns and explosions-pistol.ogg",
+      "source_name": "freesound-guns and explosions-pistol.ogg"
+    },
+    "freesound-guns and explosions-shotgun": {
+      "duration_ms": 4200,
+      "file": "freesound/guns and explosions/freesound-guns and explosions-shotgun.ogg",
+      "source_name": "freesound-guns and explosions-shotgun.ogg"
+    },
     "freesound-weather-233434__rocktopus__rain1": {
       "duration_ms": 0,
       "file": "freesound/weather/233434__rocktopus__rain1.ogg",
@@ -112,6 +272,16 @@
       "duration_ms": 0,
       "file": "freesound/weather/rain.ogg",
       "source_name": "rain.ogg"
+    },
+    "freesound-weather-ship_waves": {
+      "duration_ms": 313300,
+      "file": "freesound/weather/ship_waves.ogg",
+      "source_name": "ship_waves.ogg"
+    },
+    "freesound-weather-waves_against_rocks": {
+      "file": "freesound/weather/freesound-weather-waves_against_rocks.ogg",
+      "source_name": "freesound-weather-waves_against_rocks.ogg",
+      "duration_ms": 313216
     }
   }
 }

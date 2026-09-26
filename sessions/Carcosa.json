@@ -1,0 +1,141 @@
+{
+  "name": "Carcosa",
+  "scenes": [
+    {
+      "id": "scene-1789748325476",
+      "name": "Arrival",
+      "govee_effect": {
+        "ref": "brave-sea",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1789748336197",
+      "name": "Party",
+      "govee_effect": {
+        "ref": "torch-fire",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1789748340838",
+      "name": "Walking downtown",
+      "govee_effect": {
+        "ref": "alarm",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1789748353278",
+      "name": "Scary",
+      "govee_effect": {
+        "ref": "alarm",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1789748363664",
+      "name": "Baths",
+      "govee_effect": {
+        "ref": "alarm",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1789748368476",
+      "name": "Party on boat",
+      "govee_effect": {
+        "ref": "brave-sea",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1789748376384",
+      "name": "Chaos unravels",
+      "govee_effect": {
+        "ref": "torch-fire",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1789748384862",
+      "name": "Chasing the beast",
+      "govee_effect": {
+        "ref": "evil",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    },
+    {
+      "id": "scene-1789748430599",
+      "name": "Ending",
+      "govee_effect": {
+        "ref": "alarm",
+        "definition": {}
+      },
+      "ambient": null,
+      "ambient_volume": 50,
+      "spotify": {
+        "uri": "",
+        "volume": 50
+      },
+      "triggers": []
+    }
+  ],
+  "audio_manifest": {}
+}
